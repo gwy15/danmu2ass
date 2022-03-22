@@ -2,18 +2,26 @@ use super::danmu::{Danmu, DanmuType};
 use anyhow::{bail, Context, Result};
 use std::{
     fs::File,
-    io::{BufReader, Read, Seek},
+    io::{BufRead, BufReader, Read, Seek},
     path::Path,
 };
 
-pub struct Parser<R: Read> {
+#[cfg(feature = "quick_xml")]
+use quick_xml::Reader;
+#[cfg(feature = "xml_rs")]
+use xml::reader::EventReader as Reader;
+
+pub struct Parser<R: BufRead> {
     count: usize,
-    reader: xml::reader::EventReader<R>,
+    reader: Reader<R>,
 }
 
-impl<R: Read> Parser<R> {
+impl<R: BufRead> Parser<R> {
     pub fn new(reader: R) -> Self {
-        let reader = xml::reader::EventReader::new(reader);
+        #[cfg(feature = "xml_rs")]
+        let reader = Reader::new(reader);
+        #[cfg(feature = "quick_xml")]
+        let reader = Reader::from_reader(reader);
 
         Self { count: 0, reader }
     }
@@ -23,21 +31,24 @@ impl Parser<BufReader<File>> {
     pub fn from_path(path: &Path) -> Result<Self> {
         let file = std::fs::File::open(path)?;
         let mut reader = BufReader::new(file);
-        let mut buf = [0u8; 3];
-        reader.read_exact(&mut buf)?;
-        if buf != [0xEF, 0xBB, 0xBF] {
+        let mut bom_buf = [0u8; 3];
+        reader.read_exact(&mut bom_buf)?;
+        if bom_buf != [0xEF, 0xBB, 0xBF] {
             reader.seek(std::io::SeekFrom::Start(0))?;
         }
 
-        let reader = xml::reader::EventReader::new(reader);
+        #[cfg(feature = "xml_rs")]
+        let reader = Reader::new(reader);
+        #[cfg(feature = "quick_xml")]
+        let reader = Reader::from_reader(reader);
+
         Ok(Self { count: 0, reader })
     }
 }
 
-impl<R: Read> Iterator for Parser<R> {
-    type Item = Result<Danmu>;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl<R: BufRead> Parser<R> {
+    #[cfg(feature = "xml_rs")]
+    pub fn next(&mut self) -> Option<Result<Danmu>> {
         let mut danmu = Danmu::default();
         loop {
             let event = match self.reader.next().context("XML 文件解析错误") {
@@ -91,6 +102,67 @@ impl<R: Read> Iterator for Parser<R> {
                 | xml::reader::XmlEvent::Whitespace(_)
                 | xml::reader::XmlEvent::StartElement { .. }
                 | xml::reader::XmlEvent::EndElement { .. } => {
+                    continue;
+                }
+            }
+        }
+    }
+
+    #[cfg(feature = "quick_xml")]
+    pub fn next<'b>(&mut self, buf: &'b mut Vec<u8>) -> Option<Result<Danmu>> {
+        use quick_xml::events::Event;
+
+        let mut danmu = Danmu::default();
+        loop {
+            let event = match self.reader.read_event(buf).context("XML 文件解析错误") {
+                Ok(e) => e,
+                Err(e) => return Some(Err(e)),
+            };
+
+            match event {
+                Event::Eof => {
+                    return None;
+                }
+                Event::Start(start) if start.local_name() == b"d" => {
+                    let p_attr = start
+                        .attributes()
+                        .into_iter()
+                        .filter_map(|r| r.ok())
+                        .find(|attr| attr.key == b"p");
+                    let p_attr = match p_attr {
+                        Some(p_attr) => p_attr,
+                        None => {
+                            return Some(Err(anyhow::anyhow!(
+                                "弹幕 <d> 中没找到 p 属性，xml 文件可能有错误"
+                            )))
+                        }
+                    };
+                    let p_attr_s = match std::str::from_utf8(p_attr.value.as_ref())
+                        .context("非法 UTF-8 字符")
+                    {
+                        Ok(p_attr_s) => p_attr_s,
+                        Err(e) => return Some(Err(e)),
+                    };
+
+                    match Danmu::from_xml_p_attr(p_attr_s).context("p 属性解析错误") {
+                        Ok(parsed) => {
+                            danmu = parsed;
+                        }
+                        Err(e) => return Some(Err(e)),
+                    };
+                }
+                Event::End(end) if end.local_name() == b"d" => {
+                    self.count += 1;
+                    return Some(Ok(danmu));
+                }
+                Event::Text(text) => {
+                    let s = match std::str::from_utf8(&text).context("非法 UTF-8 字符") {
+                        Ok(s) => s.to_string(),
+                        Err(e) => return Some(Err(e.into())),
+                    };
+                    danmu.content = s;
+                }
+                _ => {
                     continue;
                 }
             }
@@ -207,9 +279,11 @@ mod tests {
 
     #[test]
     fn iterator() {
+        #[cfg(feature = "quick_xml")]
+        let mut buf = Vec::new();
         let mut parser = Parser::new(DATA.as_bytes());
         assert_eq!(
-            parser.next().unwrap().unwrap(),
+            parser.next(&mut buf).unwrap().unwrap(),
             Danmu {
                 timeline_s: 0.581,
                 content: "0-快快快".to_string(),
@@ -228,7 +302,7 @@ mod tests {
             danmu,
             Danmu {
                 timeline_s: 0.583,
-                content: "".to_string(),
+                content: String::new(),
                 r#type: DanmuType::Float,
                 fontsize: 25,
                 rgb: (0xe3, 0x3f, 0xff),
