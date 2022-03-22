@@ -2,6 +2,12 @@
 name = "danmu2ass"
 version = "0.1.0"
 edition = "2021"
+authors = ["gwy15 <gwy15thu@gmail.com>"]
+description = "哔哩哔哩的 xml 文件转化为 ass 文件"
+license = "MIT"
+homepage = "https://github.com/gwy15/danmu2ass"
+repository = "https://github.com/gwy15/danmu2ass"
+documentation = "https://docs.rs/danmu2ass/"
 
 [features]
 default = ["quick_xml"]
