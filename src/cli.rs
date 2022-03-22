@@ -84,7 +84,7 @@ impl Cli {
     }
 
     pub fn canvas_config(&self) -> crate::CanvasConfig {
-        let config = crate::CanvasConfig {
+        crate::CanvasConfig {
             width: self.width,
             height: self.height,
             font: self.font.clone(),
@@ -93,8 +93,6 @@ impl Cli {
             float_percentage: self.float_percentage,
             opacity: ((1.0 - self.alpha) * 255.0) as u8,
             bottom_percentage: 0.3,
-        };
-
-        config
+        }
     }
 }
