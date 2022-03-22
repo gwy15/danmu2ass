@@ -109,7 +109,7 @@ impl<R: BufRead> Parser<R> {
     }
 
     #[cfg(feature = "quick_xml")]
-    pub fn next<'b>(&mut self, buf: &'b mut Vec<u8>) -> Option<Result<Danmu>> {
+    pub fn next(&mut self, buf: &mut Vec<u8>) -> Option<Result<Danmu>> {
         use quick_xml::events::Event;
 
         let mut danmu = Danmu::default();
@@ -167,8 +167,7 @@ impl<R: BufRead> Parser<R> {
                             danmu.content = s;
                         }
                     }
-
-                    Err(e) => return Some(Err(e.into())),
+                    Err(e) => return Some(Err(e)),
                 },
                 _ => {
                     continue;

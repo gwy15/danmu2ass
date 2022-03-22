@@ -145,7 +145,7 @@ impl AssWriter {
             g = drawable.danmu.rgb.1,
             r = drawable.danmu.rgb.0,
             text = drawable.danmu.content,
-            // text = (0..drawable.danmu.content.chars().count()).map(|_| '😡').collect::<String>(),
+            // text = (0..drawable.danmu.content.chars().count()).map(|_| '晚').collect::<String>(),
         )?;
         Ok(())
     }

@@ -59,18 +59,13 @@ impl Canvas {
     pub fn draw(&mut self, mut danmu: Danmu) -> Result<Option<Drawable>> {
         match danmu.r#type {
             crate::danmu::DanmuType::Float => Ok(self.draw_float(danmu)),
-            crate::danmu::DanmuType::Top => {
-                warn!("当前不支持顶部弹幕");
-                Ok(None)
-            }
-            crate::danmu::DanmuType::Bottom => {
+            crate::danmu::DanmuType::Bottom
+            | crate::danmu::DanmuType::Top
+            | crate::danmu::DanmuType::Reverse => {
                 // 不喜欢底部弹幕，直接转成 Bottom
                 // 这是 feature 不是 bug
                 danmu.r#type = crate::danmu::DanmuType::Float;
                 Ok(self.draw_float(danmu))
-            }
-            crate::danmu::DanmuType::Reverse => {
-                anyhow::bail!("当前不支持反向弹幕");
             }
         }
     }
@@ -100,10 +95,10 @@ impl Canvas {
         if !collisions.is_empty() {
             collisions.sort_unstable();
             let (FloatOrd(time_need), lane_idx) = collisions[0];
-            if time_need < 2.0 {
+            if time_need < 1.0 {
                 debug!("延迟弹幕 {} 秒", time_need);
                 // 只允许延迟 1s
-                danmu.timeline_s += time_need;
+                danmu.timeline_s += time_need + 0.01; // 间隔也不要太小了
                 return Some(self.draw_float_in_lane(danmu, lane_idx));
             }
         }
