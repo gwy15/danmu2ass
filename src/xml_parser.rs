@@ -155,13 +155,21 @@ impl<R: BufRead> Parser<R> {
                     self.count += 1;
                     return Some(Ok(danmu));
                 }
-                Event::Text(text) => {
-                    let s = match std::str::from_utf8(&text).context("非法 UTF-8 字符") {
-                        Ok(s) => s.to_string(),
-                        Err(e) => return Some(Err(e.into())),
-                    };
-                    danmu.content = s;
-                }
+                Event::Text(text) => match std::str::from_utf8(&text).context("非法 UTF-8 字符")
+                {
+                    Ok(s) => {
+                        #[cfg(debug_assertions)]
+                        {
+                            danmu.content = format!("{}-{}", self.count, s);
+                        }
+                        #[cfg(not(debug_assertions))]
+                        {
+                            danmu.content = s;
+                        }
+                    }
+
+                    Err(e) => return Some(Err(e.into())),
+                },
                 _ => {
                     continue;
                 }
@@ -283,7 +291,13 @@ mod tests {
         let mut buf = Vec::new();
         let mut parser = Parser::new(DATA.as_bytes());
         assert_eq!(
-            parser.next(&mut buf).unwrap().unwrap(),
+            parser
+                .next(
+                    #[cfg(feature = "quick_xml")]
+                    &mut buf
+                )
+                .unwrap()
+                .unwrap(),
             Danmu {
                 timeline_s: 0.581,
                 content: "0-快快快".to_string(),
