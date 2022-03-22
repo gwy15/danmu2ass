@@ -9,7 +9,7 @@
 - 更紧密的弹幕填充算法（见下）
 - 底部和顶部弹幕和逆向弹幕转成正常弹幕
 
-![填充算法示例 - 将](./.github/sample.png)
+![填充算法示例](./.github/sample.png)
 
 ## 性能对比
 xml 解析器默认使用 quick_xml
@@ -22,3 +22,8 @@ xml 解析器默认使用 quick_xml
 > danmuku2ass 使用命令行
 > 
 > `python3 ../danmaku2ass/danmaku2ass.py -f Bilibili -s 1280x720 ./large.xml -o large.ass`
+
+# 安装
+- 下载 https://github.com/gwy15/danmu2ass/releases 中的 release
+- 或者使用 cargo 安装（如果你有 cargo）：`cargo install danmu2ass`
+- 或者使用 docker：`docker run -it --rm -v /tmp:/tmp gwy15/danmu2ass:main /tmp/input.xml`
