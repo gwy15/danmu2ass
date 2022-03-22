@@ -9,7 +9,8 @@ fn main() -> Result<()> {
     let mut cli = Cli::parse();
     cli.check()?;
 
-    let canvas_config = danmu2ass::CanvasConfig::default();
+    let canvas_config = cli.canvas_config();
+
     let mut parser = danmu2ass::Parser::from_path(&cli.xml_file)?;
     let writer = File::create(&cli.ass_file.context("ass_file 为空")?)?;
     let mut writer = danmu2ass::AssWriter::new(writer, &canvas_config)?;
