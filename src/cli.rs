@@ -34,7 +34,7 @@ pub struct Cli {
         long = "duration",
         short = 'd',
         help = "弹幕在屏幕上的持续时间，单位为s，可以有小数",
-        default_value = "10"
+        default_value = "15"
     )]
     duration: f64,
 
@@ -53,6 +53,14 @@ pub struct Cli {
         default_value = "0.5"
     )]
     float_percentage: f64,
+
+    #[clap(
+        long = "alpha",
+        short = 'a',
+        help = "弹幕不透明度",
+        default_value = "0.7"
+    )]
+    alpha: f64,
 }
 
 impl Cli {
@@ -76,14 +84,16 @@ impl Cli {
     }
 
     pub fn canvas_config(&self) -> crate::CanvasConfig {
-        let mut config = crate::CanvasConfig::default();
-
-        config.width = self.width;
-        config.height = self.height;
-        config.font = self.font.clone();
-        config.duration = self.duration;
-        config.lane_size = self.lane_size;
-        config.float_percentage = self.float_percentage;
+        let config = crate::CanvasConfig {
+            width: self.width,
+            height: self.height,
+            font: self.font.clone(),
+            duration: self.duration,
+            lane_size: self.lane_size,
+            float_percentage: self.float_percentage,
+            opacity: ((1.0 - self.alpha) * 255.0) as u8,
+            bottom_percentage: 0.3,
+        };
 
         config
     }

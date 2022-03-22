@@ -7,6 +7,7 @@ use anyhow::Result;
 use float_ord::FloatOrd;
 use lane::Lane;
 
+#[derive(Clone)]
 pub struct Config {
     pub duration: f64,
     pub width: u32,
@@ -18,20 +19,8 @@ pub struct Config {
     pub float_percentage: f64,
     /// 屏幕上底部弹幕最多高度百分比
     pub bottom_percentage: f64,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            duration: 10.0,
-            width: 1280,
-            height: 720,
-            font: "sans-serif".to_string(),
-            lane_size: 32,
-            float_percentage: 0.5,
-            bottom_percentage: 0.3,
-        }
-    }
+    /// 透明度
+    pub opacity: u8,
 }
 
 impl Config {

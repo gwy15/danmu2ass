@@ -164,7 +164,7 @@ impl<R: BufRead> Parser<R> {
                         }
                         #[cfg(not(debug_assertions))]
                         {
-                            danmu.content = s;
+                            danmu.content = s.to_string();
                         }
                     }
                     Err(e) => return Some(Err(e)),

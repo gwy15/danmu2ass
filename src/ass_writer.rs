@@ -44,23 +44,26 @@ impl super::CanvasConfig {
             // Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, \
             // Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
             format!(
-                "Style: Float,{font},{font_size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,\
-                0, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
+                "Style: Float,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
+                -1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
                 0.5, 0, 7, 0, 0, 0, 0",
+                a = self.opacity,
                 font = self.font,
                 font_size = 25,
             ),
             format!(
-                "Style: Bottom,{font},{font_size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,\
-                0, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
+                "Style: Bottom,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
+                1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
                 1, 0, 7, 0, 0, 0, 0",
+                a = self.opacity,
                 font = self.font,
                 font_size = 25,
             ),
             format!(
-                "Style: Top,{font},{font_size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,\
-                0, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
+                "Style: Top,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
+                1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
                 1, 0, 7, 0, 0, 0, 0",
+                a = self.opacity,
                 font = self.font,
                 font_size = 25,
             ),
@@ -80,20 +83,22 @@ impl fmt::Display for CanvasStyles {
 
 pub struct AssWriter {
     f: BufWriter<File>,
+    canvas_config: CanvasConfig,
 }
 
 impl AssWriter {
-    pub fn new(f: File, config: &CanvasConfig) -> Result<Self> {
+    pub fn new(f: File, canvas_config: CanvasConfig) -> Result<Self> {
         let mut this = AssWriter {
             f: BufWriter::new(f),
+            canvas_config,
         };
 
-        this.init(config)?;
+        this.init()?;
 
         Ok(this)
     }
 
-    pub fn init(&mut self, config: &CanvasConfig) -> Result<()> {
+    pub fn init(&mut self) -> Result<()> {
         write!(
             self.f,
             "\
@@ -119,9 +124,9 @@ impl AssWriter {
             [Events]\n\
             Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n\
             ",
-            width = config.width,
-            height = config.height,
-            styles = CanvasStyles(config.ass_styles()),
+            width = self.canvas_config.width,
+            height = self.canvas_config.height,
+            styles = CanvasStyles(self.canvas_config.ass_styles()),
         )?;
         Ok(())
     }
