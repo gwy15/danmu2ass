@@ -1,0 +1,34 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Linux binary
+        run: |
+          cargo build --verbose --release
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: danmu2ass-linux
+          path: target/release/danmu2ass
+
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare Windows environment
+        run: |
+          sudo apt install -y mingw-w64
+          rustup target add x86_64-pc-windows-gnu
+      - name: Build Windows binary
+        run: |
+          cargo build --verbose --release --target x86_64-pc-windows-gnu
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: danmu2ass-windows.exe
+          path: target/x86_64-pc-windows-gnu/release/danmu2ass.exe
