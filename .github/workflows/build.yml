@@ -20,9 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Prepare Windows environment
+      - name: Install mingw-w64
         run: |
           sudo apt install -y mingw-w64
+      - name: Add rust target
+        run: |
           rustup target add x86_64-pc-windows-gnu
       - name: Build Windows binary
         run: |
