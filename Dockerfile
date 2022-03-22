@@ -1,11 +1,12 @@
-FROM rust:alpine as builder
+FROM rust:slim-buster as builder
 WORKDIR /code
 
 COPY . .
-RUN cargo b --release
+RUN cargo b --release \
+    && strip target/release/danmu2ass
 
 # 
-FROM alpine:latest
+FROM debian:buster-slim
 WORKDIR /code
 COPY --from=builder /code/target/release/danmu2ass .
 ENTRYPOINT [ "./danmu2ass" ]
