@@ -35,16 +35,16 @@ xml 解析器默认使用 quick_xml
 
 # 使用
 ```plaintext
-danmu2ass 0.1.2
+danmu2ass 0.1.3
 gwy15
 将 XML 弹幕转换为 ASS 文件
 
 USAGE:
-    danmu2ass [OPTIONS] <XML_FILE_OR_PATH>
+    danmu2ass [OPTIONS] [XML_FILE_OR_PATH]
 
 ARGS:
     <XML_FILE_OR_PATH>    需要转换的 XML 文件或文件夹，如果是文件夹会递归将旗下所有 XML
-                          都进行转换
+                          都进行转换 [default: .]
 
 OPTIONS:
     -a, --alpha <ALPHA>
