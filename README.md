@@ -30,7 +30,7 @@ xml 解析器默认使用 quick_xml
 
 # 使用
 ```plaintext
-danmu2ass 0.1.1
+danmu2ass 0.1.2
 gwy15
 将 XML 弹幕转换为 ASS 文件
 

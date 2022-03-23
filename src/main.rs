@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use danmu2ass::{CanvasConfig, Cli};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -69,6 +69,9 @@ fn convert(
     force: bool,
     denylist: &Option<HashSet<String>>,
 ) -> Result<usize> {
+    if !file.exists() {
+        anyhow::bail!("文件 {} 不存在", file.display());
+    }
     let mut parser = danmu2ass::Parser::from_path(file)?;
 
     let output = match output {
@@ -85,7 +88,7 @@ fn convert(
     log::info!("转换 {} => {}", file.display(), output.display());
 
     // 判断是否需要转换
-    if !force {
+    if !force && output.exists() {
         let xml_modified = file.metadata()?.modified()?;
         let ass_modified = output.metadata()?.modified()?;
         if xml_modified < ass_modified {
@@ -94,7 +97,7 @@ fn convert(
         }
     }
 
-    let writer = File::create(&output)?;
+    let writer = File::create(&output).context("创建输出文件错误")?;
     let mut writer = danmu2ass::AssWriter::new(writer, canvas_config.clone())?;
 
     let t = std::time::Instant::now();
