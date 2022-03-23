@@ -7,7 +7,7 @@ use clap::Parser;
 #[clap(author = "gwy15", version, about = "将 XML 弹幕转换为 ASS 文件")]
 pub struct Cli {
     #[clap(
-        help = "需要转换的 XML 文件或文件夹，如果是文件夹会递归将旗下所有 XML 都进行转换",
+        help = "需要转换的 XML 文件或文件夹，如果是文件夹会递归将其下所有 XML 都进行转换",
         default_value = "."
     )]
     pub xml_file_or_path: PathBuf,

@@ -20,7 +20,12 @@ fn main() -> Result<()> {
     let canvas_config = cli.canvas_config();
 
     if cli.xml_file_or_path.is_dir() {
+        // Windows 下 canonicalize 会莫名其妙，见 https://stackoverflow.com/questions/1816691/how-do-i-resolve-a-canonical-filename-in-windows
+        #[cfg(windows)]
+        let path = cli.xml_file_or_path;
+        #[cfg(not(windows))]
         let path = cli.xml_file_or_path.canonicalize()?;
+
         log::info!("递归处理目录 {}", path.display());
         let glob = format!("{}/**/*.xml", path.display());
 
