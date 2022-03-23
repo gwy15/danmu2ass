@@ -13,21 +13,21 @@ pub enum Collision {
 #[derive(Debug, Clone)]
 pub struct Lane {
     last_shoot_time: f64,
-    last_length: u32,
+    last_length: f64,
 }
 
 impl Lane {
-    pub fn draw(danmu: &Danmu) -> Self {
+    pub fn draw(danmu: &Danmu, ratio: f64) -> Self {
         Lane {
             last_shoot_time: danmu.timeline_s,
-            last_length: danmu.length(),
+            last_length: danmu.length() as f64 * ratio,
         }
     }
     /// 如底部弹幕等不需要记录长度的
     pub fn draw_fixed(danmu: &Danmu) -> Self {
         Lane {
             last_shoot_time: danmu.timeline_s,
-            last_length: 0,
+            last_length: 0.0,
         }
     }
 
@@ -41,8 +41,8 @@ impl Lane {
         // 先计算我的速度
         let t1 = self.last_shoot_time;
         let t2 = other.timeline_s;
-        let l1 = self.last_length as f64;
-        let l2 = other.length() as f64;
+        let l1 = self.last_length;
+        let l2 = other.length() as f64 * config.width_ratio;
 
         let v1 = (W + l1) as f64 / T;
         let v2 = (W + l2) as f64 / T;
@@ -64,7 +64,6 @@ impl Lane {
             }
         } else {
             // 已经发射
-            let l2 = other.length() as f64;
             if l2 <= l1 {
                 // 如果 l2 < l1，则它永远追不上前者，可以发射
                 Collision::Separate {

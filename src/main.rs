@@ -20,7 +20,7 @@ fn main() -> Result<()> {
         let mut file_count = 0;
         let mut danmu_count = 0;
         for entry in glob::glob(&glob)? {
-            danmu_count += convert(entry?, None, canvas_config.clone())?;
+            danmu_count += convert(entry?, None, canvas_config.clone(), cli.force)?;
             file_count += 1;
         }
         log::info!(
@@ -29,13 +29,18 @@ fn main() -> Result<()> {
             danmu_count
         );
     } else {
-        convert(cli.xml_file_or_path, cli.ass_file, canvas_config)?;
+        convert(cli.xml_file_or_path, cli.ass_file, canvas_config, cli.force)?;
     }
 
     Ok(())
 }
 
-fn convert(file: PathBuf, output: Option<PathBuf>, canvas_config: CanvasConfig) -> Result<usize> {
+fn convert(
+    file: PathBuf,
+    output: Option<PathBuf>,
+    canvas_config: CanvasConfig,
+    force: bool,
+) -> Result<usize> {
     let mut parser = danmu2ass::Parser::from_path(&file)?;
 
     let output = match output {
@@ -50,6 +55,17 @@ fn convert(file: PathBuf, output: Option<PathBuf>, canvas_config: CanvasConfig) 
         }
     };
     log::info!("转换 {} => {}", file.display(), output.display());
+
+    // 判断是否需要转换
+    if !force {
+        let xml_modified = file.metadata()?.modified()?;
+        let ass_modified = output.metadata()?.modified()?;
+        if xml_modified < ass_modified {
+            log::info!("ASS 文件比 XML 文件新，跳过转换");
+            return Ok(0);
+        }
+    }
+
     let writer = File::create(&output)?;
     let mut writer = danmu2ass::AssWriter::new(writer, canvas_config.clone())?;
 

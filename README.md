@@ -27,3 +27,57 @@ xml 解析器默认使用 quick_xml
 - 下载 https://github.com/gwy15/danmu2ass/releases 中的 release
 - 或者使用 cargo 安装（如果你有 cargo）：`cargo install danmu2ass`
 - 或者使用 docker：`docker run -it --rm -v /tmp:/tmp gwy15/danmu2ass:main /tmp/input.xml`
+
+# 使用
+```
+danmu2ass 0.1.1
+gwy15
+将 XML 弹幕转换为 ASS 文件
+
+USAGE:
+    danmu2ass [OPTIONS] <XML_FILE_OR_PATH>
+
+ARGS:
+    <XML_FILE_OR_PATH>    需要转换的 XML 文件或文件夹，如果是文件夹会递归将旗下所有 XML
+                          都进行转换
+
+OPTIONS:
+    -a, --alpha <ALPHA>
+            弹幕不透明度 [default: 0.7]
+
+    -d, --duration <DURATION>
+            弹幕在屏幕上的持续时间，单位为s，可以有小数 [default: 15]
+
+    -f, --font <FONT>
+            弹幕使用字体 [default: 黑体]
+
+        --font-ratio <WIDTH_RATIO>
+            计算弹幕宽度时的比例，如果你的字体很宽为避免重叠需要调大这个数值 [default: 1.2]
+
+        --font-size <FONT_SIZE>
+            弹幕字体大小 [default: 25]
+
+        --force
+            默认会跳过 ass 比 xml 修改时间更晚的文件，此参数会强制转换
+
+    -h, --height <HEIGHT>
+            屏幕宽度 [default: 720]
+
+        --help
+            Print help information
+
+    -l, --lane-size <LANE_SIZE>
+            弹幕所占据的高度 [default: 32]
+
+    -o, --output <ASS_FILE>
+            输出的 ASS 文件，默认为输入文件名将 .xml 替换为 .ass，如果输入是文件夹则忽略
+
+    -p, --float-percentage <FLOAT_PERCENTAGE>
+            屏幕上滚动弹幕最多高度百分比 [default: 0.5]
+
+    -V, --version
+            Print version information
+
+    -w, --width <WIDTH>
+            屏幕宽度 [default: 1280]
+```

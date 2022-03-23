@@ -13,6 +13,8 @@ pub struct Config {
     pub width: u32,
     pub height: u32,
     pub font: String,
+    pub font_size: u32,
+    pub width_ratio: f64,
     /// lane 大小
     pub lane_size: u32,
     /// 屏幕上滚动弹幕最多高度百分比
@@ -96,7 +98,7 @@ impl Canvas {
     }
 
     fn draw_float_in_lane(&mut self, danmu: Danmu, lane_idx: usize) -> Drawable {
-        self.float_lanes[lane_idx] = Some(Lane::draw(&danmu));
+        self.float_lanes[lane_idx] = Some(Lane::draw(&danmu, self.config.width_ratio));
         let y = lane_idx as i32 * self.config.lane_size as i32;
         let l = danmu.length();
         Drawable::new(

@@ -26,9 +26,19 @@ pub struct Cli {
         long = "font",
         short = 'f',
         help = "弹幕使用字体",
-        default_value = "sans-serif"
+        default_value = "黑体"
     )]
     font: String,
+
+    #[clap(long = "font-size", help = "弹幕字体大小", default_value = "25")]
+    font_size: u32,
+
+    #[clap(
+        long = "font-ratio",
+        help = "计算弹幕宽度时的比例，如果你的字体很宽为避免重叠需要调大这个数值",
+        default_value = "1.2"
+    )]
+    width_ratio: f64,
 
     #[clap(
         long = "duration",
@@ -61,6 +71,12 @@ pub struct Cli {
         default_value = "0.7"
     )]
     alpha: f64,
+
+    #[clap(
+        long = "force",
+        help = "默认会跳过 ass 比 xml 修改时间更晚的文件，此参数会强制转换"
+    )]
+    pub force: bool,
 }
 
 impl Cli {
@@ -77,6 +93,8 @@ impl Cli {
             width: self.width,
             height: self.height,
             font: self.font.clone(),
+            font_size: self.font_size,
+            width_ratio: self.width_ratio,
             duration: self.duration,
             lane_size: self.lane_size,
             float_percentage: self.float_percentage,
