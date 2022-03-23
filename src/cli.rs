@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
@@ -77,12 +77,26 @@ pub struct Cli {
         help = "默认会跳过 ass 比 xml 修改时间更晚的文件，此参数会强制转换"
     )]
     pub force: bool,
+
+    #[clap(
+        long = "denylist",
+        help = "黑名单，需要过滤的关键词列表文件，每行一个关键词"
+    )]
+    denylist: Option<PathBuf>,
 }
 
 impl Cli {
     pub fn check(&mut self) -> Result<()> {
         if self.xml_file_or_path.is_dir() {
             info!("输入是目录，将递归遍历目录下所有 XML 文件");
+        }
+        if let Some(f) = self.denylist.as_ref() {
+            if !f.exists() {
+                anyhow::bail!("黑名单文件不存在");
+            }
+            if f.is_dir() {
+                anyhow::bail!("黑名单文件不能是目录");
+            }
         }
 
         Ok(())
@@ -100,6 +114,17 @@ impl Cli {
             float_percentage: self.float_percentage,
             opacity: ((1.0 - self.alpha) * 255.0) as u8,
             bottom_percentage: 0.3,
+        }
+    }
+
+    pub fn denylist(&self) -> Result<Option<HashSet<String>>> {
+        match self.denylist.as_ref() {
+            None => Ok(None),
+            Some(path) => {
+                let denylist = std::fs::read_to_string(path)?;
+                let list = denylist.split('\n').map(|s| s.trim().to_string()).collect();
+                Ok(Some(list))
+            }
         }
     }
 }

@@ -29,7 +29,7 @@ xml 解析器默认使用 quick_xml
 - 或者使用 docker：`docker run -it --rm -v /tmp:/tmp gwy15/danmu2ass:main /tmp/input.xml`
 
 # 使用
-```
+```plaintext
 danmu2ass 0.1.1
 gwy15
 将 XML 弹幕转换为 ASS 文件
@@ -47,6 +47,9 @@ OPTIONS:
 
     -d, --duration <DURATION>
             弹幕在屏幕上的持续时间，单位为s，可以有小数 [default: 15]
+
+        --denylist <DENYLIST>
+            黑名单，需要过滤的关键词列表文件，每行一个关键词
 
     -f, --font <FONT>
             弹幕使用字体 [default: 黑体]
