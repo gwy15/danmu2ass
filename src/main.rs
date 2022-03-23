@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use danmu2ass::{CanvasConfig, Cli};
+use danmu2ass::{Args, CanvasConfig};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{
     collections::HashSet,
@@ -14,15 +14,30 @@ fn main() -> Result<()> {
     }
     pretty_env_logger::try_init_timed()?;
 
-    let mut cli = Cli::parse();
-    cli.check()?;
-    let denylist = cli.denylist()?;
-    let canvas_config = cli.canvas_config();
+    let args = load_args()?;
+    let pause = args.pause;
 
-    if cli.xml_file_or_path.is_dir() {
+    let ret = process(args);
+    if pause {
+        if let Err(e) = ret.as_ref() {
+            println!();
+            eprintln!("发生错误：{:?}", e);
+        }
+
+        println!("按任意键继续");
+        std::io::stdin().read_line(&mut String::new())?;
+    }
+    ret
+}
+
+fn process(args: Args) -> Result<()> {
+    let denylist = args.denylist()?;
+    let canvas_config = args.canvas_config();
+
+    if args.xml_file_or_path.is_dir() {
         // Windows 下 canonicalize 会莫名其妙，见 https://stackoverflow.com/questions/1816691/how-do-i-resolve-a-canonical-filename-in-windows
         #[cfg(windows)]
-        let path = cli.xml_file_or_path;
+        let path = args.xml_file_or_path;
         #[cfg(not(windows))]
         let path = cli.xml_file_or_path.canonicalize()?;
 
@@ -38,7 +53,7 @@ fn main() -> Result<()> {
         let (file_count, danmu_count) = targets
             .into_par_iter()
             .map(
-                |path| match convert(&path, None, canvas_config.clone(), cli.force, &denylist) {
+                |path| match convert(&path, None, canvas_config.clone(), args.force, &denylist) {
                     Ok(danmu_count) => (1usize, danmu_count),
                     Err(e) => {
                         log::error!("文件 {} 转换错误：{:?}", path.display(), e);
@@ -56,15 +71,32 @@ fn main() -> Result<()> {
         );
     } else {
         convert(
-            &cli.xml_file_or_path,
-            cli.ass_file,
+            &args.xml_file_or_path,
+            args.ass_file,
             canvas_config,
-            cli.force,
+            args.force,
             &denylist,
         )?;
     }
 
     Ok(())
+}
+
+fn load_args() -> Result<Args> {
+    let path: PathBuf = "./配置文件.toml".parse()?;
+
+    let mut args = if path.exists() {
+        log::info!("加载配置文件 {}，不读取命令行参数", path.display());
+        let config = std::fs::read_to_string(&path)
+            .with_context(|| format!("读取配置文件 {} 失败", path.display()))?;
+        toml::from_str(&config)?
+    } else {
+        Args::parse()
+    };
+
+    args.check()?;
+
+    Ok(args)
 }
 
 fn convert(

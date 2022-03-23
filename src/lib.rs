@@ -12,7 +12,7 @@ mod xml_parser;
 
 pub use ass_writer::AssWriter;
 pub use canvas::{Canvas, Config as CanvasConfig};
-pub use cli::Cli;
+pub use cli::Args;
 pub use danmu::Danmu;
 pub use drawable::{DrawEffect, Drawable};
 pub use xml_parser::Parser;

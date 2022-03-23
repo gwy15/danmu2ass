@@ -3,9 +3,9 @@ use std::{collections::HashSet, path::PathBuf};
 use anyhow::Result;
 use clap::Parser;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, serde::Deserialize)]
 #[clap(author = "gwy15", version, about = "将 XML 弹幕转换为 ASS 文件")]
-pub struct Cli {
+pub struct Args {
     #[clap(
         help = "需要转换的 XML 文件或文件夹，如果是文件夹会递归将其下所有 XML 都进行转换",
         default_value = "."
@@ -22,7 +22,7 @@ pub struct Cli {
     #[clap(long = "width", short = 'w', help = "屏幕宽度", default_value = "1280")]
     width: u32,
 
-    #[clap(long = "height", short = 'h', help = "屏幕宽度", default_value = "720")]
+    #[clap(long = "height", short = 'h', help = "屏幕高度", default_value = "720")]
     height: u32,
 
     #[clap(
@@ -38,6 +38,7 @@ pub struct Cli {
 
     #[clap(
         long = "font-ratio",
+        long = "width-ratio",
         help = "计算弹幕宽度时的比例，如果你的字体很宽为避免重叠需要调大这个数值",
         default_value = "1.2"
     )]
@@ -46,7 +47,7 @@ pub struct Cli {
     #[clap(
         long = "duration",
         short = 'd',
-        help = "弹幕在屏幕上的持续时间，单位为s，可以有小数",
+        help = "弹幕在屏幕上的持续时间，单位为秒，可以有小数",
         default_value = "15"
     )]
     duration: f64,
@@ -86,9 +87,12 @@ pub struct Cli {
         help = "黑名单，需要过滤的关键词列表文件，每行一个关键词"
     )]
     denylist: Option<PathBuf>,
+
+    #[clap(long = "pause", help = "在处理完后暂停等待输入")]
+    pub pause: bool,
 }
 
-impl Cli {
+impl Args {
     pub fn check(&mut self) -> Result<()> {
         if self.xml_file_or_path.is_dir() {
             info!("输入是目录，将递归遍历目录下所有 XML 文件");
