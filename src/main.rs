@@ -39,7 +39,7 @@ fn process(args: Args) -> Result<()> {
         #[cfg(windows)]
         let path = args.xml_file_or_path;
         #[cfg(not(windows))]
-        let path = cli.xml_file_or_path.canonicalize()?;
+        let path = args.xml_file_or_path.canonicalize()?;
 
         log::info!("递归处理目录 {}", path.display());
         let glob = format!("{}/**/*.xml", path.display());

@@ -18,7 +18,7 @@ quick_xml = ["quick-xml"]
 anyhow = "1.0.56"
 float-ord = "0.3.2"
 clap = { version = "3.1.6", features = ["derive"] }
-serde = { versio = "1.0.136", features = ["derive"] }
+serde = { version = "1.0.136", features = ["derive"] }
 toml = "0.5.8"
 glob = "0.3.0"
 log = "0.4.15"
