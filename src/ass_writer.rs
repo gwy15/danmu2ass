@@ -46,7 +46,7 @@ impl super::CanvasConfig {
             format!(
                 "Style: Float,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
                 1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
-                0.5, 0, 7, 0, 0, 0, 0",
+                0.5, 0, 7, 0, 0, 0, 1",
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
@@ -54,7 +54,7 @@ impl super::CanvasConfig {
             format!(
                 "Style: Bottom,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
                 1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
-                1, 0, 7, 0, 0, 0, 0",
+                1, 0, 7, 0, 0, 0, 1",
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
@@ -62,7 +62,7 @@ impl super::CanvasConfig {
             format!(
                 "Style: Top,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
                 1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
-                1, 0, 7, 0, 0, 0, 0",
+                1, 0, 7, 0, 0, 0, 1",
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
