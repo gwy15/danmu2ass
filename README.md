@@ -37,7 +37,7 @@ xml 解析器默认使用 quick_xml
 
 # 使用
 ```plaintext
-danmu2ass 0.1.5
+danmu2ass 0.1.6
 gwy15
 将 XML 弹幕转换为 ASS 文件
 
@@ -74,7 +74,7 @@ OPTIONS:
             Print help information
 
     -l, --lane-size <LANE_SIZE>
-            弹幕所占据的高度 [default: 32]
+            弹幕所占据的高度，即“行高度/行间距” [default: 32]
 
     -o, --output <ASS_FILE>
             输出的 ASS 文件，默认为输入文件名将 .xml 替换为 .ass，如果输入是文件夹则忽略
@@ -92,5 +92,5 @@ OPTIONS:
             屏幕宽度 [default: 1280]
 
         --width-ratio <WIDTH_RATIO>
-            计算弹幕宽度时的比例，如果你的字体很宽为避免重叠需要调大这个数值 [default: 1.2]
+            为避免重叠需要调大这个数值，即“水平间距” [default: 1.2]
 ```

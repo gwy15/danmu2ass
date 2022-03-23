@@ -39,7 +39,7 @@ pub struct Args {
     #[clap(
         long = "font-ratio",
         long = "width-ratio",
-        help = "计算弹幕宽度时的比例，如果你的字体很宽为避免重叠需要调大这个数值",
+        help = "为避免重叠需要调大这个数值，即“水平间距”",
         default_value = "1.2"
     )]
     width_ratio: f64,
@@ -55,7 +55,7 @@ pub struct Args {
     #[clap(
         long = "lane-size",
         short = 'l',
-        help = "弹幕所占据的高度",
+        help = "弹幕所占据的高度，即“行高度/行间距”",
         default_value = "32"
     )]
     lane_size: u32,
