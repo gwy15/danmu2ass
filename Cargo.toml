@@ -1,6 +1,6 @@
 [package]
 name = "danmu2ass"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 authors = ["gwy15 <gwy15thu@gmail.com>"]
 description = "哔哩哔哩的 xml 文件转化为 ass 文件"
