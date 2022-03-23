@@ -1,18 +1,18 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[clap(author = "gwy15", version, about = "将 XML 弹幕转换为 ASS 文件")]
 pub struct Cli {
-    #[clap(help = "需要转换的 XML 文件")]
-    pub xml_file: PathBuf,
+    #[clap(help = "需要转换的 XML 文件或文件夹，如果是文件夹会递归将旗下所有 XML 都进行转换")]
+    pub xml_file_or_path: PathBuf,
 
     #[clap(
         long = "output",
         short = 'o',
-        help = "输出的 ASS 文件，默认为输入文件名将 .xml 替换为 .ass"
+        help = "输出的 ASS 文件，默认为输入文件名将 .xml 替换为 .ass，如果输入是文件夹则忽略"
     )]
     pub ass_file: Option<PathBuf>,
 
@@ -65,19 +65,8 @@ pub struct Cli {
 
 impl Cli {
     pub fn check(&mut self) -> Result<()> {
-        if self.xml_file.is_dir() {
-            bail!("{} 是一个目录", self.xml_file.display());
-        }
-
-        if self.ass_file.is_none() {
-            let mut path = self.xml_file.clone();
-            path.set_extension("ass");
-
-            if path.is_dir() {
-                bail!("{} 是一个目录", path.display());
-            }
-
-            self.ass_file = Some(path);
+        if self.xml_file_or_path.is_dir() {
+            info!("输入是目录，将递归遍历目录下所有 XML 文件");
         }
 
         Ok(())

@@ -1,18 +1,56 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
-use danmu2ass::Cli;
-use std::fs::File;
+use danmu2ass::{CanvasConfig, Cli};
+use std::{fs::File, path::PathBuf};
 
 fn main() -> Result<()> {
-    pretty_env_logger::try_init()?;
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "info");
+    }
+    pretty_env_logger::try_init_timed()?;
 
     let mut cli = Cli::parse();
     cli.check()?;
-
     let canvas_config = cli.canvas_config();
 
-    let mut parser = danmu2ass::Parser::from_path(&cli.xml_file)?;
-    let writer = File::create(&cli.ass_file.context("ass_file 为空")?)?;
+    if cli.xml_file_or_path.is_dir() {
+        let path = cli.xml_file_or_path.canonicalize()?;
+        log::info!("递归处理目录 {}", path.display());
+        let glob = format!("{}/**/*.xml", path.display());
+        let mut file_count = 0;
+        let mut danmu_count = 0;
+        for entry in glob::glob(&glob)? {
+            danmu_count += convert(entry?, None, canvas_config.clone())?;
+            file_count += 1;
+        }
+        log::info!(
+            "共转换 {} 个文件，共转换 {} 条弹幕",
+            file_count,
+            danmu_count
+        );
+    } else {
+        convert(cli.xml_file_or_path, cli.ass_file, canvas_config)?;
+    }
+
+    Ok(())
+}
+
+fn convert(file: PathBuf, output: Option<PathBuf>, canvas_config: CanvasConfig) -> Result<usize> {
+    let mut parser = danmu2ass::Parser::from_path(&file)?;
+
+    let output = match output {
+        Some(output) => output,
+        None => {
+            let mut path = file.clone();
+            path.set_extension("ass");
+            if path.is_dir() {
+                anyhow::bail!("输出文件 {} 不能是目录", path.display());
+            }
+            path
+        }
+    };
+    log::info!("转换 {} => {}", file.display(), output.display());
+    let writer = File::create(&output)?;
     let mut writer = danmu2ass::AssWriter::new(writer, canvas_config.clone())?;
 
     let t = std::time::Instant::now();
@@ -30,7 +68,6 @@ fn main() -> Result<()> {
             writer.write(drawable)?;
         }
     }
-    println!("弹幕数量：{}, 耗时 {:?}", count, t.elapsed());
-
-    Ok(())
+    log::info!("弹幕数量：{}, 耗时 {:?}", count, t.elapsed());
+    Ok(count)
 }
