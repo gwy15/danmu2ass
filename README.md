@@ -30,20 +30,22 @@ xml 解析器默认使用 quick_xml
 
 # 安装
 - 下载 https://github.com/gwy15/danmu2ass/releases 中的 release
+    - 对于 Windows 用户，默认 zip 内会有一个 配置文件.toml，更改其中内容即可更改配置。
+    - 该配置文件存在时不会解析命令行输入
 - 或者使用 cargo 安装（如果你有 cargo）：`cargo install danmu2ass`
 - 或者使用 docker：`docker run -it --rm -v /tmp:/tmp gwy15/danmu2ass:main /tmp/input.xml`
 
 # 使用
 ```plaintext
-danmu2ass 0.1.3
+danmu2ass 0.1.5
 gwy15
 将 XML 弹幕转换为 ASS 文件
 
 USAGE:
-    danmu2ass [OPTIONS] [XML_FILE_OR_PATH]
+    danmu2ass.exe [OPTIONS] [XML_FILE_OR_PATH]
 
 ARGS:
-    <XML_FILE_OR_PATH>    需要转换的 XML 文件或文件夹，如果是文件夹会递归将旗下所有 XML
+    <XML_FILE_OR_PATH>    需要转换的 XML 文件或文件夹，如果是文件夹会递归将其下所有 XML
                           都进行转换 [default: .]
 
 OPTIONS:
@@ -51,16 +53,13 @@ OPTIONS:
             弹幕不透明度 [default: 0.7]
 
     -d, --duration <DURATION>
-            弹幕在屏幕上的持续时间，单位为s，可以有小数 [default: 15]
+            弹幕在屏幕上的持续时间，单位为秒，可以有小数 [default: 15]
 
         --denylist <DENYLIST>
             黑名单，需要过滤的关键词列表文件，每行一个关键词
 
     -f, --font <FONT>
             弹幕使用字体 [default: 黑体]
-
-        --font-ratio <WIDTH_RATIO>
-            计算弹幕宽度时的比例，如果你的字体很宽为避免重叠需要调大这个数值 [default: 1.2]
 
         --font-size <FONT_SIZE>
             弹幕字体大小 [default: 25]
@@ -69,7 +68,7 @@ OPTIONS:
             默认会跳过 ass 比 xml 修改时间更晚的文件，此参数会强制转换
 
     -h, --height <HEIGHT>
-            屏幕宽度 [default: 720]
+            屏幕高度 [default: 720]
 
         --help
             Print help information
@@ -83,9 +82,15 @@ OPTIONS:
     -p, --float-percentage <FLOAT_PERCENTAGE>
             屏幕上滚动弹幕最多高度百分比 [default: 0.5]
 
+        --pause
+            在处理完后暂停等待输入
+
     -V, --version
             Print version information
 
     -w, --width <WIDTH>
             屏幕宽度 [default: 1280]
+
+        --width-ratio <WIDTH_RATIO>
+            计算弹幕宽度时的比例，如果你的字体很宽为避免重叠需要调大这个数值 [default: 1.2]
 ```
