@@ -23,6 +23,10 @@ pub struct Config {
     pub bottom_percentage: f64,
     /// 透明度
     pub opacity: u8,
+    /// 是否加粗，1代表是，0代表否
+    pub bold: u8,
+    /// 描边
+    pub outline: f64,
 }
 
 impl Config {

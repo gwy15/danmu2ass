@@ -52,6 +52,9 @@ OPTIONS:
     -a, --alpha <ALPHA>
             弹幕不透明度 [default: 0.7]
 
+        --bold
+            加粗
+
     -d, --duration <DURATION>
             弹幕在屏幕上的持续时间，单位为秒，可以有小数 [default: 15]
 
@@ -78,6 +81,9 @@ OPTIONS:
 
     -o, --output <ASS_FILE>
             输出的 ASS 文件，默认为输入文件名将 .xml 替换为 .ass，如果输入是文件夹则忽略
+
+        --outline <OUTLINE>
+            描边宽度 [default: 0.8]
 
     -p, --float-percentage <FLOAT_PERCENTAGE>
             屏幕上滚动弹幕最多高度百分比 [default: 0.5]

@@ -45,3 +45,9 @@ force = false
 
 # 在处理完后暂停等待输入
 pause = true
+
+# 描边宽度
+outline = 0.8
+
+# 是否加粗
+bold = false

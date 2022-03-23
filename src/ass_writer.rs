@@ -45,27 +45,33 @@ impl super::CanvasConfig {
             // Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
             format!(
                 "Style: Float,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
-                1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
-                0.5, 0, 7, 0, 0, 0, 1",
+                {bold}, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
+                {outline}, 0, 7, 0, 0, 0, 1",
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
+                bold = self.bold,
+                outline = self.outline,
             ),
             format!(
                 "Style: Bottom,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
-                1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
-                1, 0, 7, 0, 0, 0, 1",
+                {bold}, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
+                {outline}, 0, 7, 0, 0, 0, 1",
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
+                bold = self.bold,
+                outline = self.outline,
             ),
             format!(
                 "Style: Top,{font},{font_size},&H{a:02x}FFFFFF,&H00FFFFFF,&H{a:02x}000000,&H00000000,\
-                1, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
-                1, 0, 7, 0, 0, 0, 1",
+                {bold}, 0, 0, 0, 100, 100, 0.00, 0.00, 1, \
+                {outline}, 0, 7, 0, 0, 0, 1",
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
+                bold = self.bold,
+                outline = self.outline,
             ),
         ]
     }

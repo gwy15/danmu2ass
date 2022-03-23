@@ -90,6 +90,13 @@ pub struct Args {
 
     #[clap(long = "pause", help = "在处理完后暂停等待输入")]
     pub pause: bool,
+
+    #[clap(long = "outline", help = "描边宽度", default_value = "0.8")]
+    pub outline: f64,
+
+    #[clap(long = "bold", help = "加粗")]
+    #[serde(default)]
+    pub bold: bool,
 }
 
 impl Args {
@@ -121,6 +128,8 @@ impl Args {
             float_percentage: self.float_percentage,
             opacity: ((1.0 - self.alpha) * 255.0) as u8,
             bottom_percentage: 0.3,
+            outline: self.outline,
+            bold: if self.bold { 1 } else { 0 },
         }
     }
 
