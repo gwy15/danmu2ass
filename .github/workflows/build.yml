@@ -32,8 +32,8 @@ jobs:
       - name: Prepare output 
         run: |
           mkdir danmu2ass
-          cp resources/config.toml ./danmu2ass
           cp target/x86_64-pc-windows-gnu/release/danmu2ass.exe ./danmu2ass
+          cp resources/配置文件.toml ./danmu2ass
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v2
         with:
