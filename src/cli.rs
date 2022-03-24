@@ -147,7 +147,13 @@ impl Args {
             None => Ok(None),
             Some(path) => {
                 let denylist = std::fs::read_to_string(path)?;
-                let list = denylist.split('\n').map(|s| s.trim().to_string()).collect();
+                let list: HashSet<String> = denylist
+                    .split('\n')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                log::info!("黑名单载入 {} 个", list.len());
+                log::debug!("黑名单：{:?}", list);
                 Ok(Some(list))
             }
         }

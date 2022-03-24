@@ -25,6 +25,13 @@ pub struct Danmu {
 impl Danmu {
     /// 像素长度
     pub fn length(&self) -> u32 {
-        self.fontsize * self.content.chars().count() as u32
+        // 汉字算一个全宽，英文算2/3宽
+        self.fontsize
+            * self
+                .content
+                .chars()
+                .map(|ch| if ch.is_ascii() { 2 } else { 3 })
+                .sum::<u32>()
+            / 3
     }
 }

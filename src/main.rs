@@ -50,6 +50,7 @@ fn process(args: Args) -> Result<()> {
             anyhow::bail!("没有找到任何文件");
         }
 
+        let t = std::time::Instant::now();
         let (file_count, danmu_count) = targets
             .into_par_iter()
             .map(
@@ -65,9 +66,10 @@ fn process(args: Args) -> Result<()> {
             .unwrap();
 
         log::info!(
-            "共转换 {} 个文件，共转换 {} 条弹幕",
+            "共转换 {} 个文件，共转换 {} 条弹幕，耗时 {:?}",
             file_count,
-            danmu_count
+            danmu_count,
+            t.elapsed()
         );
     } else {
         convert(
@@ -134,8 +136,13 @@ fn convert(
         }
     }
 
+    let title = file
+        .file_stem()
+        .context("无法解析出文件名")?
+        .to_string_lossy()
+        .to_string();
     let writer = File::create(&output).context("创建输出文件错误")?;
-    let mut writer = danmu2ass::AssWriter::new(writer, canvas_config.clone())?;
+    let mut writer = danmu2ass::AssWriter::new(writer, title, canvas_config.clone())?;
 
     let t = std::time::Instant::now();
     let mut count = 0;
