@@ -1,4 +1,5 @@
 //! 一个弹幕实例，但是没有位置信息
+use super::CanvasConfig;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DanmuType {
@@ -24,14 +25,16 @@ pub struct Danmu {
 
 impl Danmu {
     /// 像素长度
-    pub fn length(&self) -> u32 {
+    pub fn length(&self, config: &CanvasConfig) -> f64 {
         // 汉字算一个全宽，英文算2/3宽
-        self.fontsize
+        let pts = self.fontsize
             * self
                 .content
                 .chars()
                 .map(|ch| if ch.is_ascii() { 2 } else { 3 })
                 .sum::<u32>()
-            / 3
+            / 3;
+
+        pts as f64 * config.width_ratio + config.horizontal_gap
     }
 }

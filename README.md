@@ -62,7 +62,7 @@ OPTIONS:
             黑名单，需要过滤的关键词列表文件，每行一个关键词
 
     -f, --font <FONT>
-            弹幕使用字体 [default: 黑体]
+            弹幕使用字体。单位：像素 [default: 黑体]
 
         --font-size <FONT_SIZE>
             弹幕字体大小 [default: 25]
@@ -75,6 +75,9 @@ OPTIONS:
 
         --help
             Print help information
+
+        --horizontal-gap <HORIZONTAL_GAP>
+            每条弹幕之间的最小水平间距，为避免重叠可以调大这个数值。单位：像素 [default: 20.0]
 
     -l, --lane-size <LANE_SIZE>
             弹幕所占据的高度，即“行高度/行间距” [default: 32]
@@ -101,5 +104,5 @@ OPTIONS:
             屏幕宽度 [default: 1280]
 
         --width-ratio <WIDTH_RATIO>
-            为避免重叠需要调大这个数值，即“水平间距” [default: 1.2]
+            计算弹幕宽度的比例，为避免重叠可以调大这个数值 [default: 1.2]
 ```

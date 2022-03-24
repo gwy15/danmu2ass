@@ -1,3 +1,4 @@
+use super::Config as CanvasConfig;
 use crate::Danmu;
 
 pub enum Collision {
@@ -17,10 +18,10 @@ pub struct Lane {
 }
 
 impl Lane {
-    pub fn draw(danmu: &Danmu, ratio: f64) -> Self {
+    pub fn draw(danmu: &Danmu, config: &CanvasConfig) -> Self {
         Lane {
             last_shoot_time: danmu.timeline_s,
-            last_length: danmu.length() as f64 * ratio,
+            last_length: danmu.length(config),
         }
     }
     /// 如底部弹幕等不需要记录长度的
@@ -42,7 +43,7 @@ impl Lane {
         let t1 = self.last_shoot_time;
         let t2 = other.timeline_s;
         let l1 = self.last_length;
-        let l2 = other.length() as f64 * config.width_ratio;
+        let l2 = other.length(config);
 
         let v1 = (W + l1) as f64 / T;
         let v2 = (W + l2) as f64 / T;

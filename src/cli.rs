@@ -28,7 +28,7 @@ pub struct Args {
     #[clap(
         long = "font",
         short = 'f',
-        help = "弹幕使用字体",
+        help = "弹幕使用字体。单位：像素",
         default_value = "黑体"
     )]
     font: String,
@@ -37,12 +37,19 @@ pub struct Args {
     font_size: u32,
 
     #[clap(
-        long = "font-ratio",
         long = "width-ratio",
-        help = "为避免重叠需要调大这个数值，即“水平间距”",
+        help = "计算弹幕宽度的比例，为避免重叠可以调大这个数值",
         default_value = "1.2"
     )]
     width_ratio: f64,
+
+    #[clap(
+        long = "horizontal-gap",
+        help = "每条弹幕之间的最小水平间距，为避免重叠可以调大这个数值。单位：像素",
+        default_value = "20.0"
+    )]
+    #[serde(default)]
+    horizontal_gap: f64,
 
     #[clap(
         long = "duration",
@@ -131,6 +138,7 @@ impl Args {
             font: self.font.clone(),
             font_size: self.font_size,
             width_ratio: self.width_ratio,
+            horizontal_gap: self.horizontal_gap,
             duration: self.duration,
             lane_size: self.lane_size,
             float_percentage: self.float_percentage,
