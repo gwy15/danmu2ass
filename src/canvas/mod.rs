@@ -27,6 +27,8 @@ pub struct Config {
     pub bold: u8,
     /// 描边
     pub outline: f64,
+    /// 时间轴偏移
+    pub time_offset: f64,
 }
 
 impl Config {
@@ -52,6 +54,7 @@ pub struct Canvas {
 
 impl Canvas {
     pub fn draw(&mut self, mut danmu: Danmu) -> Result<Option<Drawable>> {
+        danmu.timeline_s += self.config.time_offset;
         match danmu.r#type {
             crate::danmu::DanmuType::Float => Ok(self.draw_float(danmu)),
             crate::danmu::DanmuType::Bottom

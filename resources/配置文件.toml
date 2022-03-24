@@ -8,6 +8,9 @@ xml_file_or_path = "."
 # 输出的 ASS 文件，默认为输入文件名将 .xml 替换为 .ass，如果输入是文件夹则忽略
 # ass_file = "out.ass"
 
+# 时间轴偏移，>0 会让弹幕延后，<0 会让弹幕提前，单位为秒
+time_offset = 0.0
+
 # 屏幕宽度
 width = 1280
 

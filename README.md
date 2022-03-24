@@ -37,12 +37,12 @@ xml 解析器默认使用 quick_xml
 
 # 使用
 ```plaintext
-danmu2ass 0.1.6
+danmu2ass 0.1.7
 gwy15
 将 XML 弹幕转换为 ASS 文件
 
 USAGE:
-    danmu2ass.exe [OPTIONS] [XML_FILE_OR_PATH]
+    danmu2ass [OPTIONS] [XML_FILE_OR_PATH]
 
 ARGS:
     <XML_FILE_OR_PATH>    需要转换的 XML 文件或文件夹，如果是文件夹会递归将其下所有 XML
@@ -90,6 +90,9 @@ OPTIONS:
 
         --pause
             在处理完后暂停等待输入
+
+        --time-offset <TIME_OFFSET>
+            时间轴偏移，>0 会让弹幕延后，<0 会让弹幕提前，单位为秒 [default: 0.0]
 
     -V, --version
             Print version information

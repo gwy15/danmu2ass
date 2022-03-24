@@ -97,6 +97,14 @@ pub struct Args {
     #[clap(long = "bold", help = "加粗")]
     #[serde(default)]
     pub bold: bool,
+
+    #[clap(
+        long = "time-offset",
+        help = "时间轴偏移，>0 会让弹幕延后，<0 会让弹幕提前，单位为秒",
+        default_value = "0.0"
+    )]
+    #[serde(default)]
+    pub time_offset: f64,
 }
 
 impl Args {
@@ -130,6 +138,7 @@ impl Args {
             bottom_percentage: 0.3,
             outline: self.outline,
             bold: if self.bold { 1 } else { 0 },
+            time_offset: self.time_offset,
         }
     }
 
