@@ -24,9 +24,10 @@ pub struct Danmu {
 }
 
 impl Danmu {
-    /// 像素长度
+    /// 计算弹幕的“像素长度”，会乘上一个缩放因子
+    ///
+    /// 汉字算一个全宽，英文算2/3宽
     pub fn length(&self, config: &CanvasConfig) -> f64 {
-        // 汉字算一个全宽，英文算2/3宽
         let pts = self.fontsize
             * self
                 .content
@@ -35,6 +36,6 @@ impl Danmu {
                 .sum::<u32>()
             / 3;
 
-        pts as f64 * config.width_ratio + config.horizontal_gap
+        pts as f64 * config.width_ratio
     }
 }

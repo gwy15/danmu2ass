@@ -38,6 +38,7 @@ impl Lane {
         let T = config.duration;
         #[allow(non_snake_case)]
         let W = config.width as f64;
+        let gap = config.horizontal_gap;
 
         // 先计算我的速度
         let t1 = self.last_shoot_time;
@@ -49,37 +50,47 @@ impl Lane {
         let v2 = (W + l2) as f64 / T;
 
         let delta_t = t2 - t1;
+        // 第一条弹幕右边到屏幕右边的距离
         let delta_x = v1 * delta_t - l1;
-        if delta_x < 0.0 {
-            // 我都还没发射完呢，必定碰撞
+        // 没有足够的空间，必定碰撞
+        if delta_x < gap {
             if l2 <= l1 {
+                // l2 比 l1 短，因此比它慢
                 // 只需要把 l2 安排在 l1 之后就可以避免碰撞
                 Collision::Collide {
-                    time_needed: -delta_x / v1,
+                    time_needed: (gap - delta_x) / v1,
                 }
             } else {
-                // 需要延长额外的时间
-
-                let time_needed = (t1 + T - W / v2) - t2;
+                // 需要延长额外的时间，使得当第一条消失的时候，第二条也有足够的距离
+                // 第一条消失的时间点是 (t1 + T)
+                // 这个时候第二条的左侧应该在距离出发点 W - gap 处，
+                // 第二条已经出发 (W - gap) / v2 时间，因此在 t1 + T - (W - gap) / v2 出发
+                // 所需要的额外时间就 - t2
+                // let time_needed = (t1 + T - (W - gap) / v2) - t2;
+                let time_needed = (T - (W - gap) / v2) - delta_t;
                 Collision::Collide { time_needed }
             }
         } else {
-            // 已经发射
+            // 第一条已经发射
             if l2 <= l1 {
                 // 如果 l2 < l1，则它永远追不上前者，可以发射
                 Collision::Separate {
-                    closest_dis: delta_x,
+                    closest_dis: delta_x - gap,
                 }
             } else {
-                // 需要算追击问题了，算 l1 消失时 l2 的位置
+                // 需要算追击问题了，
+                // l1 已经消失，但是 l2 可能追上，我们计算 l1 刚好消失的时候：
+                // 此刻是 t1 + T
+                // l2 的头部应该在距离起点 v2 * (t1 + T - t2) 处
                 let pos = v2 * (T - delta_t);
-                if pos < W {
+                if pos < (W - gap) {
                     Collision::NotEnoughTime {
-                        closest_dis: W - pos,
+                        closest_dis: (W - gap) - pos,
                     }
                 } else {
+                    // 需要额外的时间
                     Collision::Collide {
-                        time_needed: (pos - W) / v2,
+                        time_needed: (pos - (W - gap)) / v2,
                     }
                 }
             }

@@ -15,6 +15,7 @@ pub struct Config {
     pub font: String,
     pub font_size: u32,
     pub width_ratio: f64,
+    /// 两条弹幕之间最小的水平距离
     pub horizontal_gap: f64,
     /// lane 大小
     pub lane_size: u32,
@@ -56,6 +57,9 @@ pub struct Canvas {
 impl Canvas {
     pub fn draw(&mut self, mut danmu: Danmu) -> Result<Option<Drawable>> {
         danmu.timeline_s += self.config.time_offset;
+        if danmu.timeline_s < 0.0 {
+            return Ok(None);
+        }
         match danmu.r#type {
             crate::danmu::DanmuType::Float => Ok(self.draw_float(danmu)),
             crate::danmu::DanmuType::Bottom
