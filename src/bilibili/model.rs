@@ -1,5 +1,5 @@
 //! 出于减少编译引入考虑，直接翻译了一下 pb，不引入 prost-build
-//! 
+//!
 //! 可以看旁边的 dm.proto
 
 use prost::Message;
@@ -64,4 +64,20 @@ pub struct DanmakuElem {
 pub struct DmSegMobileReply {
     #[prost(message, repeated, tag = "1")]
     pub elems: Vec<DanmakuElem>,
+}
+
+impl From<DanmakuElem> for crate::Danmu {
+    fn from(elem: DanmakuElem) -> Self {
+        Self {
+            timeline_s: elem.progress as f64 / 1000.0,
+            content: elem.content,
+            r#type: crate::danmu::DanmuType::from_xml_num(elem.mode as u32).unwrap_or_default(),
+            fontsize: elem.fontsize as u32,
+            rgb: (
+                ((elem.color >> 16) & 0xFF) as u8,
+                ((elem.color >> 8) & 0xFF) as u8,
+                (elem.color & 0xFF) as u8,
+            ),
+        }
+    }
 }

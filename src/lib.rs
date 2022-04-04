@@ -4,13 +4,12 @@
 extern crate log;
 
 mod ass_writer;
+mod bilibili;
 mod canvas;
 mod cli;
 mod danmu;
 mod drawable;
 mod xml_parser;
-#[cfg(feature = "bilibili")]
-pub mod bilibili;
 
 pub use ass_writer::AssWriter;
 pub use canvas::{Canvas, Config as CanvasConfig};

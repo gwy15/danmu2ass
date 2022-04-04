@@ -122,6 +122,7 @@ pub struct Args {
     pub time_offset: f64,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 enum InputType {
     File(PathBuf),
     Folder(PathBuf),
@@ -135,7 +136,8 @@ impl FromStr for InputType {
             Ok(url) => {
                 let bv = url
                     .path_segments()
-                    .and_then(|mut s| s.next())
+                    .context("解析 URL 的 path segments 错误")?
+                    .find(|seg| seg.starts_with("BV"))
                     .context("解析 bv 失败")?
                     .to_string();
                 let p = url
@@ -145,6 +147,12 @@ impl FromStr for InputType {
                 Ok(InputType::Bilibili { bv, p })
             }
             Err(_) => {
+                if s.starts_with("BV") && s.chars().all(|c| c.is_ascii_alphanumeric()) {
+                    return Ok(InputType::Bilibili {
+                        bv: s.to_string(),
+                        p: None,
+                    });
+                }
                 let path = PathBuf::from(s);
                 if path.is_dir() {
                     Ok(InputType::Folder(path))
@@ -211,7 +219,7 @@ impl Args {
             InputType::File(file) => {
                 let denylist = self.denylist()?;
                 let canvas_config = self.canvas_config();
-                convert(&file, self.ass_file, canvas_config, self.force, &denylist)?;
+                convert_xml(&file, self.ass_file, self.force, canvas_config, &denylist)?;
             }
             InputType::Folder(path) => {
                 self.process_folder(path)?;
@@ -244,15 +252,15 @@ impl Args {
         let t = std::time::Instant::now();
         let (file_count, danmu_count) = targets
             .into_par_iter()
-            .map(
-                |path| match convert(&path, None, canvas_config.clone(), self.force, &denylist) {
+            .map(|path| {
+                match convert_xml(&path, None, self.force, canvas_config.clone(), &denylist) {
                     Ok(danmu_count) => (1usize, danmu_count),
                     Err(e) => {
                         log::error!("文件 {} 转换错误：{:?}", path.display(), e);
                         (0, 0)
                     }
-                },
-            )
+                }
+            })
             .reduce_with(|a, b| (a.0 + b.0, a.1 + b.1))
             .unwrap();
 
@@ -274,36 +282,30 @@ impl Args {
             anyhow::bail!("视频 {} 只有 {} p，指定 {}p", bv, info.pages.len(), p);
         }
         let page = info.pages.swap_remove(p as usize - 1);
-        todo!();
+
+        let danmu = crate::bilibili::get_danmu_for_page(page).await?;
+        let danmu = danmu.into_iter().map(|d| Ok(d.into()));
+
+        let ass = PathBuf::from(format!("{}.ass", info.title));
+        convert(danmu, &ass, self.canvas_config(), &self.denylist()?)?;
+
         Ok(())
     }
 }
 
-fn convert(
+fn convert_xml(
     file: &Path,
     output: Option<PathBuf>,
-    canvas_config: CanvasConfig,
     force: bool,
+    canvas_config: CanvasConfig,
     denylist: &Option<HashSet<String>>,
 ) -> Result<usize> {
     if !file.exists() {
         anyhow::bail!("文件 {} 不存在", file.display());
     }
-    let mut parser = super::Parser::from_path(file)?;
 
-    let output = match output {
-        Some(output) => output,
-        None => {
-            let mut path = file.to_path_buf();
-            path.set_extension("ass");
-            if path.is_dir() {
-                anyhow::bail!("输出文件 {} 不能是目录", path.display());
-            }
-            path
-        }
-    };
+    let output = output.unwrap_or_else(|| file.with_extension("ass"));
     log::info!("转换 {} => {}", file.display(), output.display());
-
     // 判断是否需要转换
     if !force && output.exists() {
         let xml_modified = file.metadata()?.modified()?;
@@ -314,7 +316,25 @@ fn convert(
         }
     }
 
-    let title = file
+    let data_provider = crate::Parser::from_path(file)?;
+
+    convert(data_provider, &output, canvas_config, denylist)
+}
+
+fn convert<I>(
+    data_provider: I,
+    output: &Path,
+    canvas_config: CanvasConfig,
+    denylist: &Option<HashSet<String>>,
+) -> Result<usize>
+where
+    I: Iterator<Item = Result<crate::Danmu>>,
+{
+    if output.is_dir() {
+        anyhow::bail!("输出文件 {} 不能是目录", output.display());
+    }
+
+    let title = output
         .file_stem()
         .context("无法解析出文件名")?
         .to_string_lossy()
@@ -322,15 +342,11 @@ fn convert(
     let writer = File::create(&output).context("创建输出文件错误")?;
     let mut writer = super::AssWriter::new(writer, title, canvas_config.clone())?;
 
-    let t = std::time::Instant::now();
     let mut count = 0;
     let mut canvas = canvas_config.canvas();
-    #[cfg(feature = "quick_xml")]
-    let mut buf = Vec::new();
-    while let Some(danmu) = parser.next(
-        #[cfg(feature = "quick_xml")]
-        &mut buf,
-    ) {
+    let t = std::time::Instant::now();
+
+    for danmu in data_provider {
         let danmu = danmu?;
         if let Some(denylist) = denylist.as_ref() {
             if denylist.iter().any(|s| danmu.content.contains(s)) {
@@ -346,7 +362,46 @@ fn convert(
         "弹幕数量：{}, 耗时 {:?}（{}）",
         count,
         t.elapsed(),
-        file.display()
+        output.display()
     );
     Ok(count)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn parse_bilibili() {
+        assert_eq!(
+            InputType::from_str("https://www.bilibili.com/video/BV1z44y1E7m6").unwrap(),
+            InputType::Bilibili {
+                bv: "BV1z44y1E7m6".to_string(),
+                p: None
+            }
+        );
+
+        assert_eq!(
+            InputType::from_str("https://www.bilibili.com/BV1z44y1E7m6").unwrap(),
+            InputType::Bilibili {
+                bv: "BV1z44y1E7m6".to_string(),
+                p: None
+            }
+        );
+
+        assert_eq!(
+            InputType::from_str("https://www.bilibili.com/BV1z44y1E7m6?p=1").unwrap(),
+            InputType::Bilibili {
+                bv: "BV1z44y1E7m6".to_string(),
+                p: Some(1)
+            }
+        );
+
+        assert_eq!(
+            InputType::from_str("BV1z44y1E7m6").unwrap(),
+            InputType::Bilibili {
+                bv: "BV1z44y1E7m6".to_string(),
+                p: None
+            }
+        );
+    }
 }

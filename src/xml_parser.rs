@@ -14,6 +14,8 @@ use xml::reader::EventReader as Reader;
 pub struct Parser<R: BufRead> {
     count: usize,
     reader: Reader<R>,
+    #[cfg(feature = "quick_xml")]
+    buf: Vec<u8>,
 }
 
 impl<R: BufRead> Parser<R> {
@@ -23,7 +25,13 @@ impl<R: BufRead> Parser<R> {
         #[cfg(feature = "quick_xml")]
         let reader = Reader::from_reader(reader);
 
-        Self { count: 0, reader }
+        Self {
+            count: 0,
+            reader,
+
+            #[cfg(feature = "quick_xml")]
+            buf: Vec::new(),
+        }
     }
 }
 
@@ -42,13 +50,20 @@ impl Parser<BufReader<File>> {
         #[cfg(feature = "quick_xml")]
         let reader = Reader::from_reader(reader);
 
-        Ok(Self { count: 0, reader })
+        Ok(Self {
+            count: 0,
+            reader,
+            #[cfg(feature = "quick_xml")]
+            buf: Vec::new(),
+        })
     }
 }
 
-impl<R: BufRead> Parser<R> {
+impl<R: BufRead> Iterator for Parser<R> {
+    type Item = Result<Danmu>;
+
     #[cfg(feature = "xml_rs")]
-    pub fn next(&mut self) -> Option<Result<Danmu>> {
+    fn next(&mut self) -> Option<Result<Danmu>> {
         let mut danmu = Danmu::default();
         loop {
             let event = match self.reader.next().context("XML 文件解析错误") {
@@ -109,12 +124,16 @@ impl<R: BufRead> Parser<R> {
     }
 
     #[cfg(feature = "quick_xml")]
-    pub fn next(&mut self, buf: &mut Vec<u8>) -> Option<Result<Danmu>> {
+    fn next(&mut self) -> Option<Result<Danmu>> {
         use quick_xml::events::Event;
 
         let mut danmu = Danmu::default();
         loop {
-            let event = match self.reader.read_event(buf).context("XML 文件解析错误") {
+            let event = match self
+                .reader
+                .read_event(&mut self.buf)
+                .context("XML 文件解析错误")
+            {
                 Ok(e) => e,
                 Err(e) => return Some(Err(e)),
             };
@@ -286,17 +305,9 @@ mod tests {
 
     #[test]
     fn iterator() {
-        #[cfg(feature = "quick_xml")]
-        let mut buf = Vec::new();
         let mut parser = Parser::new(DATA.as_bytes());
         assert_eq!(
-            parser
-                .next(
-                    #[cfg(feature = "quick_xml")]
-                    &mut buf
-                )
-                .unwrap()
-                .unwrap(),
+            parser.next().unwrap().unwrap(),
             Danmu {
                 timeline_s: 0.581,
                 content: "0-快快快".to_string(),
