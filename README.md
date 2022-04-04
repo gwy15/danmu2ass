@@ -2,7 +2,12 @@
 [![Continuous integration](https://github.com/gwy15/danmu2ass/actions/workflows/ci.yml/badge.svg)](https://github.com/gwy15/danmu2ass/actions/workflows/ci.yml)
 [![Publish Docker image](https://github.com/gwy15/danmu2ass/actions/workflows/docker.yml/badge.svg)](https://github.com/gwy15/danmu2ass/actions/workflows/docker.yml)
 
-将哔哩哔哩的 xml 文件转化为 ass 文件
+将哔哩哔哩的 弹幕 转化为 ass 文件
+
+## 支持的格式
+- [x] 录播姬等录制的 XML 格式文件
+- [x] 哔哩哔哩的弹幕，支持 BV 号/链接（可带分 p 参数）
+
 
 ## 特性
 - 比 danmaku2ass 快一百倍的速度（见下方性能对比）
@@ -32,14 +37,13 @@ xml 解析器默认使用 quick_xml
 - 下载 https://github.com/gwy15/danmu2ass/releases 中的 release
     - 对于 Windows 用户，默认 zip 内会有一个 配置文件.toml，更改其中内容即可更改配置。
     - 该配置文件存在时不会解析命令行输入
-- 或者使用 cargo 安装（如果你有 cargo）：`cargo install danmu2ass`
-- 或者使用 docker：`docker run -it --rm -v /tmp:/tmp gwy15/danmu2ass:main /tmp/input.xml`
+- 或者使用 docker：`docker run -it --rm -v /tmp:/tmp gwy15/danmu2ass:main /tmp`
 
 # 使用
 ## 配置文件
 当前目录下存在配置文件（文件名：配置文件.toml、可以用记事本编辑）时，
 danmu2ass 会优先加载该配置文件而忽略任何命令行输入。
-这也是推荐给不熟悉命令行的用户的方法。
+这也是 **推荐给不熟悉命令行的用户的方法** 。
 
 > Windows 压缩包内默认包含配置文件。
 

@@ -19,6 +19,8 @@ pub struct Danmu {
     pub timeline_s: f64,
     pub content: String,
     pub r#type: DanmuType,
+    /// 虽然这里有 fontsize，但是我们实际上使用 canvas config 的 font size，
+    /// 否在在调节分辨率的时候字体会发生变化。
     pub fontsize: u32,
     pub rgb: (u8, u8, u8),
 }
@@ -28,7 +30,7 @@ impl Danmu {
     ///
     /// 汉字算一个全宽，英文算2/3宽
     pub fn length(&self, config: &CanvasConfig) -> f64 {
-        let pts = self.fontsize
+        let pts = config.font_size
             * self
                 .content
                 .chars()
