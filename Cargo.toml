@@ -10,9 +10,14 @@ repository = "https://github.com/gwy15/danmu2ass"
 documentation = "https://docs.rs/danmu2ass/"
 
 [features]
-default = ["quick_xml"]
+default = ["quick_xml", "rustls"]
+# xml 解析方法
 xml_rs = ["xml-rs"]
 quick_xml = ["quick-xml"]
+# tls
+native-tls = ["reqwest/native-tls", "biliapi/native-tls"]
+rustls = ["reqwest/rustls-tls", "biliapi/rustls"]
+
 
 [dependencies]
 anyhow = "1.0.56"
@@ -27,3 +32,10 @@ rayon = "1.5.1"
 
 xml-rs = { version = "0.8.4", optional = true }
 quick-xml = { version = "0.22.0", optional = true }
+
+# 从 哔哩哔哩 下载视频的弹幕并转换为 ass 文件
+biliapi = { version = "0.1.16", default-features = false }
+prost = "0.10.0"
+reqwest = { version = "0.11.10", default-features = false }
+url = "2.2.2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

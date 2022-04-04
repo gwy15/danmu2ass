@@ -1,16 +1,24 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::HashSet,
+    fs::File,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
-use anyhow::Result;
+use super::CanvasConfig;
+use anyhow::{Context, Result};
+use biliapi::Request;
 use clap::Parser;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 #[derive(Parser, Debug, serde::Deserialize)]
 #[clap(author = "gwy15", version, about = "将 XML 弹幕转换为 ASS 文件")]
 pub struct Args {
     #[clap(
-        help = "需要转换的 XML 文件或文件夹，如果是文件夹会递归将其下所有 XML 都进行转换",
+        help = "需要转换的输入，可以是 xml 文件、文件夹或是哔哩哔哩链接、BV 号。如果是文件夹会递归将其下所有 XML 都进行转换",
         default_value = "."
     )]
-    pub xml_file_or_path: PathBuf,
+    pub input: String,
 
     #[clap(
         long = "output",
@@ -114,11 +122,42 @@ pub struct Args {
     pub time_offset: f64,
 }
 
+enum InputType {
+    File(PathBuf),
+    Folder(PathBuf),
+    Bilibili { bv: String, p: Option<u32> },
+}
+impl FromStr for InputType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match url::Url::parse(s) {
+            Ok(url) => {
+                let bv = url
+                    .path_segments()
+                    .and_then(|mut s| s.next())
+                    .context("解析 bv 失败")?
+                    .to_string();
+                let p = url
+                    .query_pairs()
+                    .find(|(k, _)| k == "p")
+                    .and_then(|(_, v)| v.parse().ok());
+                Ok(InputType::Bilibili { bv, p })
+            }
+            Err(_) => {
+                let path = PathBuf::from(s);
+                if path.is_dir() {
+                    Ok(InputType::Folder(path))
+                } else {
+                    Ok(InputType::File(path))
+                }
+            }
+        }
+    }
+}
+
 impl Args {
     pub fn check(&mut self) -> Result<()> {
-        if self.xml_file_or_path.is_dir() {
-            info!("输入是目录，将递归遍历目录下所有 XML 文件");
-        }
         if let Some(f) = self.denylist.as_ref() {
             if !f.exists() {
                 anyhow::bail!("黑名单文件不存在");
@@ -131,7 +170,7 @@ impl Args {
         Ok(())
     }
 
-    pub fn canvas_config(&self) -> crate::CanvasConfig {
+    fn canvas_config(&self) -> crate::CanvasConfig {
         crate::CanvasConfig {
             width: self.width,
             height: self.height,
@@ -150,7 +189,7 @@ impl Args {
         }
     }
 
-    pub fn denylist(&self) -> Result<Option<HashSet<String>>> {
+    fn denylist(&self) -> Result<Option<HashSet<String>>> {
         match self.denylist.as_ref() {
             None => Ok(None),
             Some(path) => {
@@ -166,4 +205,148 @@ impl Args {
             }
         }
     }
+
+    pub async fn process(self) -> Result<()> {
+        match self.input.parse::<InputType>()? {
+            InputType::File(file) => {
+                let denylist = self.denylist()?;
+                let canvas_config = self.canvas_config();
+                convert(&file, self.ass_file, canvas_config, self.force, &denylist)?;
+            }
+            InputType::Folder(path) => {
+                self.process_folder(path)?;
+            }
+            InputType::Bilibili { bv, p } => {
+                self.process_bilibili(bv, p).await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn process_folder(&self, folder: PathBuf) -> Result<()> {
+        let canvas_config = self.canvas_config();
+        let denylist = self.denylist()?;
+
+        // Windows 下 canonicalize 会莫名其妙，见 https://stackoverflow.com/questions/1816691/how-do-i-resolve-a-canonical-filename-in-windows
+        #[cfg(not(windows))]
+        let folder = folder.canonicalize()?;
+
+        log::info!("递归处理目录 {}", folder.display());
+        let glob = format!("{}/**/*.xml", folder.display());
+
+        let targets: Vec<PathBuf> = glob::glob(&glob)?.collect::<Result<_, _>>()?;
+        log::info!("共找到 {} 个文件", targets.len());
+        if targets.is_empty() {
+            anyhow::bail!("没有找到任何文件");
+        }
+
+        let t = std::time::Instant::now();
+        let (file_count, danmu_count) = targets
+            .into_par_iter()
+            .map(
+                |path| match convert(&path, None, canvas_config.clone(), self.force, &denylist) {
+                    Ok(danmu_count) => (1usize, danmu_count),
+                    Err(e) => {
+                        log::error!("文件 {} 转换错误：{:?}", path.display(), e);
+                        (0, 0)
+                    }
+                },
+            )
+            .reduce_with(|a, b| (a.0 + b.0, a.1 + b.1))
+            .unwrap();
+
+        log::info!(
+            "共转换 {} 个文件，共转换 {} 条弹幕，耗时 {:?}",
+            file_count,
+            danmu_count,
+            t.elapsed()
+        );
+        Ok(())
+    }
+
+    async fn process_bilibili(&self, bv: String, p: Option<u32>) -> Result<()> {
+        let p = p.unwrap_or(1);
+        // get info for video
+        let client = biliapi::connection::new_client()?;
+        let mut info = biliapi::requests::VideoInfo::request(&client, bv.clone()).await?;
+        if p > info.pages.len() as u32 {
+            anyhow::bail!("视频 {} 只有 {} p，指定 {}p", bv, info.pages.len(), p);
+        }
+        let page = info.pages.swap_remove(p as usize - 1);
+        todo!();
+        Ok(())
+    }
+}
+
+fn convert(
+    file: &Path,
+    output: Option<PathBuf>,
+    canvas_config: CanvasConfig,
+    force: bool,
+    denylist: &Option<HashSet<String>>,
+) -> Result<usize> {
+    if !file.exists() {
+        anyhow::bail!("文件 {} 不存在", file.display());
+    }
+    let mut parser = super::Parser::from_path(file)?;
+
+    let output = match output {
+        Some(output) => output,
+        None => {
+            let mut path = file.to_path_buf();
+            path.set_extension("ass");
+            if path.is_dir() {
+                anyhow::bail!("输出文件 {} 不能是目录", path.display());
+            }
+            path
+        }
+    };
+    log::info!("转换 {} => {}", file.display(), output.display());
+
+    // 判断是否需要转换
+    if !force && output.exists() {
+        let xml_modified = file.metadata()?.modified()?;
+        let ass_modified = output.metadata()?.modified()?;
+        if xml_modified < ass_modified {
+            log::info!("ASS 文件比 XML 文件新，跳过转换（{}）", file.display());
+            return Ok(0);
+        }
+    }
+
+    let title = file
+        .file_stem()
+        .context("无法解析出文件名")?
+        .to_string_lossy()
+        .to_string();
+    let writer = File::create(&output).context("创建输出文件错误")?;
+    let mut writer = super::AssWriter::new(writer, title, canvas_config.clone())?;
+
+    let t = std::time::Instant::now();
+    let mut count = 0;
+    let mut canvas = canvas_config.canvas();
+    #[cfg(feature = "quick_xml")]
+    let mut buf = Vec::new();
+    while let Some(danmu) = parser.next(
+        #[cfg(feature = "quick_xml")]
+        &mut buf,
+    ) {
+        let danmu = danmu?;
+        if let Some(denylist) = denylist.as_ref() {
+            if denylist.iter().any(|s| danmu.content.contains(s)) {
+                continue;
+            }
+        }
+        if let Some(drawable) = canvas.draw(danmu)? {
+            count += 1;
+            writer.write(drawable)?;
+        }
+    }
+    log::info!(
+        "弹幕数量：{}, 耗时 {:?}（{}）",
+        count,
+        t.elapsed(),
+        file.display()
+    );
+    Ok(count)
 }
