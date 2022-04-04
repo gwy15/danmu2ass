@@ -48,9 +48,9 @@ danmu2ass 会优先加载该配置文件而忽略任何命令行输入。
 ```toml
 # 在本文件存在时，优先读取本文件的内容，不会读取命令行参数
 
-# 需要转换的 XML 文件或文件夹，如果是文件夹会递归将其下所有 XML 都进行转换
-# 默认是当前目录下所有的 XML 文件
-xml_file_or_path = "."
+# 需要转换的输入，可以是 xml 文件、文件夹或是哔哩哔哩链接、BV 号。
+# 如果是文件夹会递归将其下所有 XML 都进行转换
+input = "."
 
 # 输出的 ASS 文件，默认为输入文件名将 .xml 替换为 .ass，如果输入是文件夹则忽略
 # ass_file = "out.ass"
@@ -108,16 +108,16 @@ bold = false
 如果你熟悉命令行，可以直接使用：
 
 ```plaintext
-danmu2ass 0.1.8
+danmu2ass 0.2.0
 gwy15
 将 XML 弹幕转换为 ASS 文件
 
 USAGE:
-    danmu2ass [OPTIONS] [XML_FILE_OR_PATH]
+    danmu2ass [OPTIONS] [INPUT]
 
 ARGS:
-    <XML_FILE_OR_PATH>    需要转换的 XML 文件或文件夹，如果是文件夹会递归将其下所有 XML
-                          都进行转换 [default: .]
+    <INPUT>    需要转换的输入，可以是 xml 文件、文件夹或是哔哩哔哩链接、BV
+               号。如果是文件夹会递归将其下所有 XML 都进行转换 [default: .]
 
 OPTIONS:
     -a, --alpha <ALPHA>

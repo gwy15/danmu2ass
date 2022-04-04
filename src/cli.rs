@@ -174,6 +174,12 @@ impl Args {
                 anyhow::bail!("黑名单文件不能是目录");
             }
         }
+        if self.float_percentage < 0.0 {
+            anyhow::bail!("滚动弹幕最大高度百分比不能小于 0");
+        }
+        if self.float_percentage > 1.0 {
+            anyhow::bail!("滚动弹幕最大高度百分比不能大于 1");
+        }
 
         Ok(())
     }
