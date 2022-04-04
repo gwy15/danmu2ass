@@ -4,6 +4,7 @@
 extern crate log;
 
 mod ass_writer;
+mod bilibili;
 mod canvas;
 mod cli;
 mod danmu;

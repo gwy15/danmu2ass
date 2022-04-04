@@ -1,6 +1,11 @@
 {
     "cSpell.words": [
+        "Danmaku",
         "Danmu",
-        "fontsize"
+        "fontsize",
+        "prost"
+    ],
+    "rust-analyzer.cargo.features": [
+        "rustls"
     ]
 }
