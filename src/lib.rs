@@ -9,6 +9,7 @@ mod canvas;
 mod cli;
 mod danmu;
 mod drawable;
+mod input_type;
 mod xml_parser;
 
 pub use ass_writer::AssWriter;

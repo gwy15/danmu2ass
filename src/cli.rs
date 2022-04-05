@@ -2,9 +2,9 @@ use std::{
     collections::HashSet,
     fs::File,
     path::{Path, PathBuf},
-    str::FromStr,
 };
 
+use super::input_type::InputType;
 use super::CanvasConfig;
 use anyhow::{Context, Result};
 use biliapi::Request;
@@ -122,48 +122,6 @@ pub struct Args {
     pub time_offset: f64,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum InputType {
-    File(PathBuf),
-    Folder(PathBuf),
-    Bilibili { bv: String, p: Option<u32> },
-}
-impl FromStr for InputType {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match url::Url::parse(s) {
-            Ok(url) => {
-                let bv = url
-                    .path_segments()
-                    .context("解析 URL 的 path segments 错误")?
-                    .find(|seg| seg.starts_with("BV"))
-                    .context("解析 bv 失败")?
-                    .to_string();
-                let p = url
-                    .query_pairs()
-                    .find(|(k, _)| k == "p")
-                    .and_then(|(_, v)| v.parse().ok());
-                Ok(InputType::Bilibili { bv, p })
-            }
-            Err(_) => {
-                if s.starts_with("BV") && s.chars().all(|c| c.is_ascii_alphanumeric()) {
-                    return Ok(InputType::Bilibili {
-                        bv: s.to_string(),
-                        p: None,
-                    });
-                }
-                let path = PathBuf::from(s);
-                if path.is_dir() {
-                    Ok(InputType::Folder(path))
-                } else {
-                    Ok(InputType::File(path))
-                }
-            }
-        }
-    }
-}
-
 impl Args {
     pub fn check(&mut self) -> Result<()> {
         if let Some(f) = self.denylist.as_ref() {
@@ -230,8 +188,15 @@ impl Args {
             InputType::Folder(path) => {
                 self.process_folder(path)?;
             }
-            InputType::Bilibili { bv, p } => {
-                self.process_bilibili(bv, p).await?;
+            InputType::BV { bv, p } => {
+                self.process_bv(bv, p).await?;
+            }
+            InputType::Season { season_id } => {
+                self.process_episode_or_season("season_id", season_id)
+                    .await?;
+            }
+            InputType::Episode { episode_id } => {
+                self.process_episode_or_season("ep_id", episode_id).await?;
             }
         }
 
@@ -279,7 +244,7 @@ impl Args {
         Ok(())
     }
 
-    async fn process_bilibili(&self, bv: String, p: Option<u32>) -> Result<()> {
+    async fn process_bv(&self, bv: String, p: Option<u32>) -> Result<()> {
         let p = p.unwrap_or(1);
         // get info for video
         let client = biliapi::connection::new_client()?;
@@ -289,10 +254,44 @@ impl Args {
         }
         let page = info.pages.swap_remove(p as usize - 1);
 
-        let danmu = crate::bilibili::get_danmu_for_page(page).await?;
+        let danmu = crate::bilibili::get_danmu_for_video(page.cid, page.duration.as_secs()).await?;
         let danmu = danmu.into_iter().map(|d| Ok(d.into()));
 
         let ass = PathBuf::from(format!("{}.ass", info.title));
+        convert(danmu, &ass, self.canvas_config(), &self.denylist()?)?;
+
+        Ok(())
+    }
+
+    /// key_type: season_id 或是 ep_id
+    async fn process_episode_or_season(
+        &self,
+        key_type: &'static str,
+        ep_or_season_id: u64,
+    ) -> Result<()> {
+        let client = biliapi::connection::new_client()?;
+
+        let mut season_info =
+            crate::bilibili::Season::request(&client, (key_type, ep_or_season_id))
+                .await
+                .context("获取 season 失败")?;
+        let (title, ep) = match key_type {
+            "season_id" => (season_info.title, season_info.episodes.swap_remove(0)),
+            "ep_id" => {
+                let ep = season_info
+                    .episodes
+                    .into_iter()
+                    .find(|ep| ep.id == ep_or_season_id)
+                    .ok_or_else(|| anyhow::anyhow!("没有找到 ep_id {}", ep_or_season_id))?;
+                (format!("{} - {}", season_info.title, ep.title), ep)
+            }
+            _ => unreachable!(),
+        };
+
+        let danmu = crate::bilibili::get_danmu_for_video(ep.cid, ep.duration_ms / 1000).await?;
+        let danmu = danmu.into_iter().map(|d| Ok(d.into()));
+
+        let ass = PathBuf::from(format!("{}.ass", title));
         convert(danmu, &ass, self.canvas_config(), &self.denylist()?)?;
 
         Ok(())
@@ -371,43 +370,4 @@ where
         output.display()
     );
     Ok(count)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn parse_bilibili() {
-        assert_eq!(
-            InputType::from_str("https://www.bilibili.com/video/BV1z44y1E7m6").unwrap(),
-            InputType::Bilibili {
-                bv: "BV1z44y1E7m6".to_string(),
-                p: None
-            }
-        );
-
-        assert_eq!(
-            InputType::from_str("https://www.bilibili.com/BV1z44y1E7m6").unwrap(),
-            InputType::Bilibili {
-                bv: "BV1z44y1E7m6".to_string(),
-                p: None
-            }
-        );
-
-        assert_eq!(
-            InputType::from_str("https://www.bilibili.com/BV1z44y1E7m6?p=1").unwrap(),
-            InputType::Bilibili {
-                bv: "BV1z44y1E7m6".to_string(),
-                p: Some(1)
-            }
-        );
-
-        assert_eq!(
-            InputType::from_str("BV1z44y1E7m6").unwrap(),
-            InputType::Bilibili {
-                bv: "BV1z44y1E7m6".to_string(),
-                p: None
-            }
-        );
-    }
 }
