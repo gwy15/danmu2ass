@@ -38,7 +38,8 @@ impl<R: BufRead> Parser<R> {
 impl Parser<BufReader<File>> {
     pub fn from_path(path: &Path) -> Result<Self> {
         let file = std::fs::File::open(path)?;
-        let mut reader = BufReader::new(file);
+        // 对于 HDD、docker 之类的场景，磁盘 IO 是非常大的瓶颈。使用大缓存
+        let mut reader = BufReader::with_capacity(10 << 20, file);
         let mut bom_buf = [0u8; 3];
         reader.read_exact(&mut bom_buf)?;
         if bom_buf != [0xEF, 0xBB, 0xBF] {

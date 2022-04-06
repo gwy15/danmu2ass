@@ -96,7 +96,8 @@ pub struct AssWriter {
 impl AssWriter {
     pub fn new(f: File, title: String, canvas_config: CanvasConfig) -> Result<Self> {
         let mut this = AssWriter {
-            f: BufWriter::new(f),
+            // 对于 HDD、docker 之类的场景，磁盘 IO 是非常大的瓶颈。使用大缓存
+            f: BufWriter::with_capacity(10 << 20, f),
             title,
             canvas_config,
         };
