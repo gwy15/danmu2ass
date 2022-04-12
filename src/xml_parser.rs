@@ -304,6 +304,21 @@ mod tests {
         </i>
     "##;
 
+    static BREAK_LINE: &str = r#"
+    <i>
+<d p="1.171,1,25,5566168,1649656743447,0,1772442517,0" user="晓小轩iAS" raw="[[0,1,25,5566168,1649656743447,1649648276,0,&quot;53372c65&quot;,0,0,0,&quot;&quot;,0,&quot;{}&quot;,&quot;{}&quot;,{&quot;mode&quot;:0,&quot;show_player_type&quot;:0,&quot;extra&quot;:&quot;{\&quot;send_from_me\&quot;:false,\&quot;mode\&quot;:0,\&quot;color\&quot;:5566168,\&quot;dm_type\&quot;:0,\&quot;font_size\&quot;:25,\&quot;player_mode\&quot;:1,\&quot;show_player_type\&quot;:0,\&quot;content\&quot;:\&quot;呵\\r呵\\r比\\r你\\r们\\r更\\r喜\\r欢\\r晚\\r晚\&quot;,\&quot;user_hash\&quot;:\&quot;1396124773\&quot;,\&quot;emoticon_unique\&quot;:\&quot;\&quot;,\&quot;bulge_display\&quot;:0,\&quot;direction\&quot;:0,\&quot;pk_direction\&quot;:0,\&quot;quartet_direction\&quot;:0,\&quot;yeah_space_type\&quot;:\&quot;\&quot;,\&quot;yeah_space_url\&quot;:\&quot;\&quot;,\&quot;jump_to_url\&quot;:\&quot;\&quot;,\&quot;space_type\&quot;:\&quot;\&quot;,\&quot;space_url\&quot;:\&quot;\&quot;}&quot;}],&quot;呵\r呵\r比\r你\r们\r更\r喜\r欢\r晚\r晚&quot;,[1772442517,&quot;晓小轩iAS&quot;,0,0,0,10000,1,&quot;&quot;],[16,&quot;顶碗人&quot;,&quot;向晚大魔王&quot;,22625025,12478086,&quot;&quot;,0,12478086,12478086,12478086,0,1,672346917],[3,0,9868950,&quot;&gt;50000&quot;,0],[&quot;&quot;,&quot;&quot;],0,0,null,{&quot;ts&quot;:1649656743,&quot;ct&quot;:&quot;4772E092&quot;},0,0,null,null,0,56]">呵
+呵
+比
+你
+们
+更
+喜
+欢
+晚
+晚</d>
+    </i>
+    "#;
+
     #[test]
     fn iterator() {
         let mut parser = Parser::new(DATA.as_bytes());
@@ -333,5 +348,12 @@ mod tests {
                 rgb: (0xe3, 0x3f, 0xff),
             }
         );
+    }
+
+    #[test]
+    fn parse_break_line() {
+        let mut parser = Parser::new(BREAK_LINE.as_bytes());
+        let danmu = parser.next().unwrap().unwrap();
+        assert_eq!(danmu.content, "0-呵\n呵\n比\n你\n们\n更\n喜\n欢\n晚\n晚");
     }
 }

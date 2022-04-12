@@ -1,5 +1,6 @@
 use crate::{CanvasConfig, DrawEffect, Drawable};
 use anyhow::Result;
+use std::borrow::Cow;
 use std::io::{BufWriter, Write};
 use std::{fmt, fs::File};
 
@@ -160,10 +161,19 @@ impl AssWriter {
             b = drawable.danmu.rgb.2,
             g = drawable.danmu.rgb.1,
             r = drawable.danmu.rgb.0,
-            text = drawable.danmu.content,
+            text = Self::escape_text(&drawable.danmu.content),
             // text = (0..drawable.danmu.content.chars().count()).map(|_| '晚').collect::<String>(),
         )?;
         Ok(())
+    }
+
+    fn escape_text(text: &str) -> Cow<str> {
+        let text = text.trim();
+        if text.contains('\n') {
+            Cow::from(text.replace('\n', "\\N"))
+        } else {
+            Cow::from(text)
+        }
     }
 }
 
@@ -203,6 +213,14 @@ mod tests {
                 }
             ),
             "1:00:01.01"
+        );
+    }
+
+    #[test]
+    fn escape_text() {
+        assert_eq!(
+            AssWriter::escape_text("呵\n呵\n比\n你\n们\n更\n喜\n欢\n晚\n晚").as_ref(),
+            r"呵\N呵\N比\N你\N们\N更\N喜\N欢\N晚\N晚"
         );
     }
 }
