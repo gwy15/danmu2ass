@@ -169,7 +169,7 @@ impl AssWriter {
 
     fn escape_text(text: &str) -> Cow<str> {
         let text = text.trim();
-        if text.contains('\n') {
+        if memchr::memchr(b'\n', text.as_bytes()).is_some() {
             Cow::from(text.replace('\n', "\\N"))
         } else {
             Cow::from(text)
