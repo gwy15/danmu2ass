@@ -31,7 +31,7 @@ async fn get_danmu_for_cid_segment(
         .map(|v| v.as_bytes().starts_with(b"application/json"))
         .unwrap_or(false);
     if is_json_resp {
-        let _: () = biliapi::requests::BiliResponse::from_response(resp).await?;
+        biliapi::requests::BiliResponse::from_response(resp).await?;
         anyhow::bail!("The response should fail");
     } else {
         // parse as pb
