@@ -1,8 +1,8 @@
 use crate::{CanvasConfig, DrawEffect, Drawable};
 use anyhow::Result;
 use std::borrow::Cow;
+use std::fmt;
 use std::io::{BufWriter, Write};
-use std::{fmt, fs::File};
 
 struct TimePoint {
     t: f64,
@@ -88,14 +88,14 @@ impl fmt::Display for CanvasStyles {
     }
 }
 
-pub struct AssWriter {
-    f: BufWriter<File>,
+pub struct AssWriter<W: Write> {
+    f: BufWriter<W>,
     title: String,
     canvas_config: CanvasConfig,
 }
 
-impl AssWriter {
-    pub fn new(f: File, title: String, canvas_config: CanvasConfig) -> Result<Self> {
+impl<W: Write> AssWriter<W> {
+    pub fn new(f: W, title: String, canvas_config: CanvasConfig) -> Result<Self> {
         let mut this = AssWriter {
             // 对于 HDD、docker 之类的场景，磁盘 IO 是非常大的瓶颈。使用大缓存
             f: BufWriter::with_capacity(10 << 20, f),
@@ -161,19 +161,19 @@ impl AssWriter {
             b = drawable.danmu.rgb.2,
             g = drawable.danmu.rgb.1,
             r = drawable.danmu.rgb.0,
-            text = Self::escape_text(&drawable.danmu.content),
+            text = escape_text(&drawable.danmu.content),
             // text = (0..drawable.danmu.content.chars().count()).map(|_| '晚').collect::<String>(),
         )?;
         Ok(())
     }
+}
 
-    fn escape_text(text: &str) -> Cow<str> {
-        let text = text.trim();
-        if memchr::memchr(b'\n', text.as_bytes()).is_some() {
-            Cow::from(text.replace('\n', "\\N"))
-        } else {
-            Cow::from(text)
-        }
+fn escape_text(text: &str) -> Cow<str> {
+    let text = text.trim();
+    if memchr::memchr(b'\n', text.as_bytes()).is_some() {
+        Cow::from(text.replace('\n', "\\N"))
+    } else {
+        Cow::from(text)
     }
 }
 
@@ -217,9 +217,9 @@ mod tests {
     }
 
     #[test]
-    fn escape_text() {
+    fn test_escape_text() {
         assert_eq!(
-            AssWriter::escape_text("呵\n呵\n比\n你\n们\n更\n喜\n欢\n晚\n晚").as_ref(),
+            escape_text("呵\n呵\n比\n你\n们\n更\n喜\n欢\n晚\n晚").as_ref(),
             r"呵\N呵\N比\N你\N们\N更\N喜\N欢\N晚\N晚"
         );
     }
