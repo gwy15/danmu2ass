@@ -1,6 +1,7 @@
 use std::{
     collections::HashSet,
     fs::File,
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -257,8 +258,17 @@ impl Args {
         let danmu = crate::bilibili::get_danmu_for_video(page.cid, page.duration.as_secs()).await?;
         let danmu = danmu.into_iter().map(|d| Ok(d.into()));
 
-        let ass = PathBuf::from(format!("{}.ass", info.title));
-        convert(danmu, &ass, self.canvas_config(), &self.denylist()?)?;
+        let filename = format!("{}.ass", info.title);
+        let ass = PathBuf::from(&filename);
+        let f = std::fs::File::create(&ass)
+            .with_context(|| format!("Create output ass file `{filename}` failed"))?;
+        convert(
+            danmu,
+            info.title,
+            f,
+            self.canvas_config(),
+            &self.denylist()?,
+        )?;
 
         Ok(())
     }
@@ -291,8 +301,10 @@ impl Args {
         let danmu = crate::bilibili::get_danmu_for_video(ep.cid, ep.duration_ms / 1000).await?;
         let danmu = danmu.into_iter().map(|d| Ok(d.into()));
 
-        let ass = PathBuf::from(format!("{}.ass", title));
-        convert(danmu, &ass, self.canvas_config(), &self.denylist()?)?;
+        let filename = format!("{}.ass", title);
+        let ass = std::fs::File::create(&filename)
+            .with_context(|| format!("Create output ass filename `{filename}` failed"))?;
+        convert(danmu, title, ass, self.canvas_config(), &self.denylist()?)?;
 
         Ok(())
     }
@@ -310,6 +322,9 @@ fn convert_xml(
     }
 
     let output = output.unwrap_or_else(|| file.with_extension("ass"));
+    if output.is_dir() {
+        anyhow::bail!("输出文件 {} 不能是一个目录", output.display());
+    }
     log::info!("转换 {} => {}", file.display(), output.display());
     // 判断是否需要转换
     if !force && output.exists() {
@@ -320,32 +335,35 @@ fn convert_xml(
             return Ok(0);
         }
     }
-
     let data_provider = crate::Parser::from_path(file)?;
+    let title = file
+        .file_stem()
+        .context("无法解析出文件名")?
+        .to_string_lossy()
+        .to_string();
 
-    convert(data_provider, &output, canvas_config, denylist)
+    if output.to_string_lossy() == "-" {
+        let stdout = std::io::stdout();
+        let stdout = stdout.lock();
+        convert(data_provider, title, stdout, canvas_config, denylist)
+    } else {
+        let output = File::create(output).context("创建输出文件错误")?;
+        convert(data_provider, title, output, canvas_config, denylist)
+    }
 }
 
-fn convert<I>(
+fn convert<I, O>(
     data_provider: I,
-    output: &Path,
+    title: String,
+    output: O,
     canvas_config: CanvasConfig,
     denylist: &Option<HashSet<String>>,
 ) -> Result<usize>
 where
     I: Iterator<Item = Result<crate::Danmu>>,
+    O: Write,
 {
-    if output.is_dir() {
-        anyhow::bail!("输出文件 {} 不能是目录", output.display());
-    }
-
-    let title = output
-        .file_stem()
-        .context("无法解析出文件名")?
-        .to_string_lossy()
-        .to_string();
-    let writer = File::create(output).context("创建输出文件错误")?;
-    let mut writer = super::AssWriter::new(writer, title, canvas_config.clone())?;
+    let mut writer = super::AssWriter::new(output, title.clone(), canvas_config.clone())?;
 
     let mut count = 0;
     let mut canvas = canvas_config.canvas();
@@ -363,11 +381,6 @@ where
             writer.write(drawable)?;
         }
     }
-    log::info!(
-        "弹幕数量：{}, 耗时 {:?}（{}）",
-        count,
-        t.elapsed(),
-        output.display()
-    );
+    log::info!("弹幕数量：{}, 耗时 {:?}（{}）", count, t.elapsed(), title);
     Ok(count)
 }
