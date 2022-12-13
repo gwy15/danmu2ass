@@ -156,7 +156,7 @@ impl Args {
             opacity: ((1.0 - self.alpha) * 255.0) as u8,
             bottom_percentage: 0.3,
             outline: self.outline,
-            bold: if self.bold { 1 } else { 0 },
+            bold: u8::from(self.bold),
             time_offset: self.time_offset,
         }
     }
@@ -344,7 +344,7 @@ where
         .context("无法解析出文件名")?
         .to_string_lossy()
         .to_string();
-    let writer = File::create(&output).context("创建输出文件错误")?;
+    let writer = File::create(output).context("创建输出文件错误")?;
     let mut writer = super::AssWriter::new(writer, title, canvas_config.clone())?;
 
     let mut count = 0;
