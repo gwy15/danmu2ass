@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     fs::File,
-    io::Write,
+    io::{StdoutLock, Write},
     path::{Path, PathBuf},
 };
 
@@ -10,6 +10,7 @@ use super::CanvasConfig;
 use anyhow::{Context, Result};
 use biliapi::Request;
 use clap::Parser;
+use either::Either;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 #[derive(Parser, Debug, serde::Deserialize)]
@@ -258,14 +259,20 @@ impl Args {
         let danmu = crate::bilibili::get_danmu_for_video(page.cid, page.duration.as_secs()).await?;
         let danmu = danmu.into_iter().map(|d| Ok(d.into()));
 
-        let filename = format!("{}.ass", info.title);
-        let ass = PathBuf::from(&filename);
-        let f = std::fs::File::create(&ass)
-            .with_context(|| format!("Create output ass file `{filename}` failed"))?;
+        let output = match writer_from_path(self.ass_file.as_deref())? {
+            Some(w) => w,
+            _ => {
+                let filename = format!("{}.ass", info.title);
+                let ass = PathBuf::from(&filename);
+                let f = std::fs::File::create(&ass)
+                    .with_context(|| format!("Create output ass file `{filename}` failed"))?;
+                Either::Left(f)
+            }
+        };
         convert(
             danmu,
             info.title,
-            f,
+            output,
             self.canvas_config(),
             &self.denylist()?,
         )?;
@@ -301,13 +308,38 @@ impl Args {
         let danmu = crate::bilibili::get_danmu_for_video(ep.cid, ep.duration_ms / 1000).await?;
         let danmu = danmu.into_iter().map(|d| Ok(d.into()));
 
-        let filename = format!("{}.ass", title);
-        let ass = std::fs::File::create(&filename)
-            .with_context(|| format!("Create output ass filename `{filename}` failed"))?;
-        convert(danmu, title, ass, self.canvas_config(), &self.denylist()?)?;
+        let output = match writer_from_path(self.ass_file.as_deref())? {
+            Some(w) => w,
+            _ => {
+                let filename = format!("{}.ass", title);
+                let ass = std::fs::File::create(&filename)
+                    .with_context(|| format!("Create output ass filename `{filename}` failed"))?;
+                Either::Left(ass)
+            }
+        };
+
+        convert(
+            danmu,
+            title,
+            output,
+            self.canvas_config(),
+            &self.denylist()?,
+        )?;
 
         Ok(())
     }
+}
+
+fn writer_from_path(path: Option<&Path>) -> Result<Option<Either<File, StdoutLock>>> {
+    let Some(output) = path else {
+        return Ok(None);
+    };
+    let writer = if output.to_string_lossy() == "-" {
+        Either::Right(std::io::stdout().lock())
+    } else {
+        Either::Left(File::create(output)?)
+    };
+    Ok(Some(writer))
 }
 
 fn convert_xml(
@@ -342,14 +374,8 @@ fn convert_xml(
         .to_string_lossy()
         .to_string();
 
-    if output.to_string_lossy() == "-" {
-        let stdout = std::io::stdout();
-        let stdout = stdout.lock();
-        convert(data_provider, title, stdout, canvas_config, denylist)
-    } else {
-        let output = File::create(output).context("创建输出文件错误")?;
-        convert(data_provider, title, output, canvas_config, denylist)
-    }
+    let writer = writer_from_path(Some(&output))?.unwrap();
+    convert(data_provider, title, writer, canvas_config, denylist)
 }
 
 fn convert<I, O>(
