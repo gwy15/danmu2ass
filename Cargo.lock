@@ -340,6 +340,7 @@ dependencies = [
  "anyhow",
  "biliapi",
  "clap",
+ "either",
  "float-ord",
  "futures",
  "glob",
