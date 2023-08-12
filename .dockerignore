@@ -2,3 +2,5 @@
 
 *.xml
 *.ass
+
+/static

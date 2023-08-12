@@ -18,7 +18,7 @@ quick_xml = ["quick-xml"]
 native-tls = ["reqwest/native-tls", "biliapi/native-tls"]
 rustls = ["reqwest/rustls-tls", "biliapi/rustls"]
 
-web = ["actix-web", "tempfile", "portpicker", "open"]
+web = ["actix-web", "tempfile", "portpicker", "open", "percent-encoding", "actix-files"]
 
 [dependencies]
 anyhow = "1.0.56"
@@ -48,3 +48,7 @@ actix-web = { version = "4.3.1", optional = true }
 tempfile = { version = "3.7.1", optional = true }
 portpicker = { version = "0.1.1", optional = true }
 open = { version = "5.0.0", optional = true }
+percent-encoding = { version = "2.3.0", optional = true }
+actix-files = { version = "0.6.2", optional = true }
+# actix-cors = "0.6.4"
+

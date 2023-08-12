@@ -4,11 +4,12 @@ use actix_web::{web, HttpResponse};
 use anyhow::{bail, Context};
 use biliapi::Request;
 use danmu2ass::{bilibili::DanmakuElem, CanvasConfig, InputType};
+use log::info;
 use serde::Deserialize;
 use serde_json::json;
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "type", content = "content")]
+#[serde(tag = "type", content = "content", rename_all = "snake_case")]
 pub enum Source {
     Xml { content: String, title: String },
     Url { url: String },
@@ -21,20 +22,31 @@ pub struct ConvertRequest {
     denylist: Option<HashSet<String>>,
 }
 
-#[actix_web::get("/convert}")]
 async fn convert(request: web::Json<ConvertRequest>) -> HttpResponse {
     let req = request.into_inner();
-    match req.source {
+    let mut output = Vec::<u8>::new();
+    let title = match req.source {
         Source::Xml { content, title } => {
+            info!("parsing {} bytes in xml", content.len());
             let parser = danmu2ass::Parser::new(content.as_bytes());
-            let mut output = Vec::<u8>::new();
-            let r = danmu2ass::convert(parser, title, &mut output, req.config, &req.denylist);
+            let r = danmu2ass::convert(
+                parser,
+                title.clone(),
+                &mut output,
+                req.config,
+                &req.denylist,
+            );
             if let Err(e) = r {
                 return HttpResponse::BadRequest().json(json!({
                     "errmsg": format!("{e:#?}")
                 }));
             }
-            HttpResponse::Ok().content_type("text/plain").body(output)
+            let ass_title = title
+                .as_str()
+                .strip_suffix(".xml")
+                .map(ToString::to_string)
+                .unwrap_or(title);
+            ass_title
         }
         Source::Url { url } => {
             let input_type: InputType = url.parse().unwrap();
@@ -47,10 +59,10 @@ async fn convert(request: web::Json<ConvertRequest>) -> HttpResponse {
                     }));
                 }
             };
-            let mut output = Vec::<u8>::new();
+            log::info!("download {} danmu, title={}", danmu.len(), title);
             let r = danmu2ass::convert(
                 danmu.into_iter().map(|i| Ok(i.into())),
-                title,
+                title.clone(),
                 &mut output,
                 req.config,
                 &req.denylist,
@@ -60,9 +72,16 @@ async fn convert(request: web::Json<ConvertRequest>) -> HttpResponse {
                     "errmsg": format!("{e:#?}")
                 }));
             }
-            HttpResponse::Ok().content_type("text/plain").body(output)
+            title
         }
-    }
+    };
+    let title =
+        percent_encoding::percent_encode(title.as_bytes(), percent_encoding::NON_ALPHANUMERIC);
+    let content_disposition = format!("attachment; filename=\"{title}.ass\"");
+    HttpResponse::Ok()
+        .append_header(("Content-Type", "text/plain; charset=utf-8"))
+        .append_header(("Content-Disposition", content_disposition))
+        .body(output)
 }
 
 async fn run_input_type(input_type: InputType) -> anyhow::Result<(String, Vec<DanmakuElem>)> {
@@ -113,11 +132,26 @@ async fn run_input_type(input_type: InputType) -> anyhow::Result<(String, Vec<Da
     }
 }
 
+fn files_service() -> actix_files::Files {
+    actix_files::Files::new("/", "./static")
+        .index_file("index.html")
+        .prefer_utf8(true)
+}
+
 pub async fn run_server() -> anyhow::Result<()> {
-    let port = portpicker::pick_unused_port().context("pick port failed")?;
-    let fut = actix_web::HttpServer::new(|| actix_web::App::new().service(convert))
-        .bind(("127.0.0.1", port))?
-        .run();
+    let port = if portpicker::is_free(8081) {
+        8081
+    } else {
+        portpicker::pick_unused_port().context("pick port failed")?
+    };
+    let fut = actix_web::HttpServer::new(move || {
+        actix_web::App::new()
+            // .wrap(actix_cors::Cors::permissive())
+            .route("/convert", web::post().to(convert))
+            .default_service(files_service())
+    })
+    .bind(("127.0.0.1", port))?
+    .run();
     let handle = tokio::spawn(fut);
     // open
     match open::that(format!("http://127.0.0.1:{port}")) {

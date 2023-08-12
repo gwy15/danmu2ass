@@ -25,6 +25,7 @@ pub struct Config {
     #[serde(skip_deserializing)]
     pub bottom_percentage: f64,
     /// 透明度
+    #[serde(rename = "alpha", deserialize_with = "deserialize_alpha_to_opacity")]
     pub opacity: u8,
     /// 是否加粗，1代表是，0代表否
     pub bold: bool,
@@ -32,6 +33,17 @@ pub struct Config {
     pub outline: f64,
     /// 时间轴偏移
     pub time_offset: f64,
+}
+fn deserialize_alpha_to_opacity<'de, D>(deserializer: D) -> Result<u8, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Deserialize;
+    let alpha = f64::deserialize(deserializer)?;
+    if !(0.0..=1.0).contains(&alpha) {
+        return Err(serde::de::Error::custom("alpha must be between 0 and 1"));
+    }
+    Ok(255 - (alpha * 255.) as u8)
 }
 
 impl Config {
