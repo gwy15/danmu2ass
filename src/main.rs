@@ -1,7 +1,12 @@
-use anyhow::{Context, Result};
+#![allow(unused_imports)]
+use anyhow::Context;
+use anyhow::Result;
 use clap::Parser;
 use danmu2ass::Args;
 use std::path::PathBuf;
+
+#[cfg(feature = "web")]
+mod web;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -10,6 +15,16 @@ async fn main() -> Result<()> {
     }
     pretty_env_logger::try_init_timed()?;
 
+    inner_main().await
+}
+
+#[cfg(feature = "web")]
+async fn inner_main() -> Result<()> {
+    web::run_server().await
+}
+
+#[cfg(not(feature = "web"))]
+async fn inner_main() -> Result<()> {
     let args = load_args()?;
     let pause = args.pause;
 
@@ -26,6 +41,7 @@ async fn main() -> Result<()> {
     ret
 }
 
+#[cfg(not(feature = "web"))]
 fn load_args() -> Result<Args> {
     let path: PathBuf = "./配置文件.toml".parse()?;
 

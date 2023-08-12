@@ -158,7 +158,7 @@ impl Args {
             opacity: ((1.0 - self.alpha) * 255.0) as u8,
             bottom_percentage: 0.3,
             outline: self.outline,
-            bold: u8::from(self.bold),
+            bold: self.bold,
             time_offset: self.time_offset,
         }
     }
@@ -264,7 +264,7 @@ impl Args {
             _ => {
                 let filename = format!("{}.ass", info.title);
                 let ass = PathBuf::from(&filename);
-                let f = std::fs::File::create(&ass)
+                let f = std::fs::File::create(ass)
                     .with_context(|| format!("Create output ass file `{filename}` failed"))?;
                 Either::Left(f)
             }
@@ -378,7 +378,7 @@ fn convert_xml(
     convert(data_provider, title, writer, canvas_config, denylist)
 }
 
-fn convert<I, O>(
+pub fn convert<I, O>(
     data_provider: I,
     title: String,
     output: O,

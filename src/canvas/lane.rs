@@ -46,8 +46,8 @@ impl Lane {
         let l1 = self.last_length;
         let l2 = other.length(config);
 
-        let v1 = (W + l1) as f64 / T;
-        let v2 = (W + l2) as f64 / T;
+        let v1 = (W + l1) / T;
+        let v2 = (W + l2) / T;
 
         let delta_t = t2 - t1;
         // 第一条弹幕右边到屏幕右边的距离

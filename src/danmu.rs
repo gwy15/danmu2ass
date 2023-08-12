@@ -1,17 +1,13 @@
 //! 一个弹幕实例，但是没有位置信息
 use super::CanvasConfig;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DanmuType {
+    #[default]
     Float,
     Top,
     Bottom,
     Reverse,
-}
-impl Default for DanmuType {
-    fn default() -> Self {
-        DanmuType::Float
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]

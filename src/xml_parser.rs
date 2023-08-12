@@ -146,7 +146,6 @@ impl<R: BufRead> Iterator for Parser<R> {
                 Event::Start(start) if start.local_name() == b"d" => {
                     let p_attr = start
                         .attributes()
-                        .into_iter()
                         .filter_map(|r| r.ok())
                         .find(|attr| attr.key == b"p");
                     let p_attr = match p_attr {

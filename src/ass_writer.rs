@@ -51,7 +51,7 @@ impl super::CanvasConfig {
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
-                bold = self.bold,
+                bold = self.bold as u8,
                 outline = self.outline,
             ),
             format!(
@@ -61,7 +61,7 @@ impl super::CanvasConfig {
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
-                bold = self.bold,
+                bold = self.bold as u8,
                 outline = self.outline,
             ),
             format!(
@@ -71,7 +71,7 @@ impl super::CanvasConfig {
                 a = self.opacity,
                 font = self.font,
                 font_size = self.font_size,
-                bold = self.bold,
+                bold = self.bold as u8,
                 outline = self.outline,
             ),
         ]

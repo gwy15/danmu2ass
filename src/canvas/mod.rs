@@ -7,7 +7,7 @@ use anyhow::Result;
 use float_ord::FloatOrd;
 use lane::Lane;
 
-#[derive(Clone)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct Config {
     pub duration: f64,
     pub width: u32,
@@ -22,11 +22,12 @@ pub struct Config {
     /// 屏幕上滚动弹幕最多高度百分比
     pub float_percentage: f64,
     /// 屏幕上底部弹幕最多高度百分比
+    #[serde(skip_deserializing)]
     pub bottom_percentage: f64,
     /// 透明度
     pub opacity: u8,
     /// 是否加粗，1代表是，0代表否
-    pub bold: u8,
+    pub bold: bool,
     /// 描边
     pub outline: f64,
     /// 时间轴偏移
