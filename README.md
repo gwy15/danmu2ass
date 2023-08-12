@@ -9,7 +9,8 @@
 - [x] 哔哩哔哩视频：支持 BV 号/链接（可带分 p 参数）
 - [x] 哔哩哔哩番组：支持 ss28281 / ep450006 或 https://www.bilibili.com/bangumi/play/ss28281 等链接
 
-![WEB UI](./resources/readme.webm)
+[readme.webm](https://github.com/gwy15/danmu2ass/assets/23229760/282ccf33-bd49-4b86-b0bb-8edabc2f9f04)
+
 
 ## 特性
 - 比 danmaku2ass 快一百倍的速度（见下方性能对比）
