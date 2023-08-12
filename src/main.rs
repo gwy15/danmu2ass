@@ -15,19 +15,13 @@ async fn main() -> Result<()> {
     }
     pretty_env_logger::try_init_timed()?;
 
-    inner_main().await
-}
-
-#[cfg(feature = "web")]
-async fn inner_main() -> Result<()> {
-    web::run_server().await
-}
-
-#[cfg(not(feature = "web"))]
-async fn inner_main() -> Result<()> {
     let args = load_args()?;
-    let pause = args.pause;
+    #[cfg(feature = "web")]
+    if !args.no_web {
+        return web::run_server().await;
+    }
 
+    let pause = args.pause;
     let ret = args.process().await;
     if pause {
         if let Err(e) = ret.as_ref() {
@@ -41,20 +35,8 @@ async fn inner_main() -> Result<()> {
     ret
 }
 
-#[cfg(not(feature = "web"))]
 fn load_args() -> Result<Args> {
-    let path: PathBuf = "./配置文件.toml".parse()?;
-
-    let mut args = if path.exists() {
-        log::info!("加载配置文件 {}，不读取命令行参数", path.display());
-        let config = std::fs::read_to_string(&path)
-            .with_context(|| format!("读取配置文件 {} 失败", path.display()))?;
-        toml::from_str(&config)?
-    } else {
-        Args::parse()
-    };
-
+    let mut args = Args::parse();
     args.check()?;
-
     Ok(args)
 }

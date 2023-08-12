@@ -13,9 +13,13 @@ use clap::Parser;
 use either::Either;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-#[derive(Parser, Debug, serde::Deserialize)]
+#[derive(Parser, Debug)]
 #[clap(author = "gwy15", version, about = "将 XML 弹幕转换为 ASS 文件")]
 pub struct Args {
+    #[cfg(feature = "web")]
+    #[clap(long, help = "不打开 web ui 而使用 cli 模式")]
+    pub no_web: bool,
+
     #[clap(
         help = "需要转换的输入，可以是 xml 文件、文件夹或是哔哩哔哩链接、BV 号。如果是文件夹会递归将其下所有 XML 都进行转换",
         default_value = "."
@@ -58,7 +62,6 @@ pub struct Args {
         help = "每条弹幕之间的最小水平间距，为避免重叠可以调大这个数值。单位：像素",
         default_value = "20.0"
     )]
-    #[serde(default)]
     horizontal_gap: f64,
 
     #[clap(
@@ -112,7 +115,6 @@ pub struct Args {
     pub outline: f64,
 
     #[clap(long = "bold", help = "加粗")]
-    #[serde(default)]
     pub bold: bool,
 
     #[clap(
@@ -120,7 +122,6 @@ pub struct Args {
         help = "时间轴偏移，>0 会让弹幕延后，<0 会让弹幕提前，单位为秒",
         default_value = "0.0"
     )]
-    #[serde(default)]
     pub time_offset: f64,
 }
 
