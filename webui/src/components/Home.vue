@@ -6,7 +6,7 @@
       hide-details
       outlined
       v-model="display_source"
-      label="选择 xml 或输入 URL / BV 号 / ep 号"
+      label="输入 URL / BV 号 / ep 号 / 本地绝对路径 / 本地相对路径 / 选择 XML 文件"
       append-icon="mdi-file-upload-outline"
       @click:append="select_xml"
     />

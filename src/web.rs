@@ -59,14 +59,9 @@ async fn convert(request: web::Json<ConvertRequest>) -> HttpResponse {
                     }));
                 }
             };
-            log::info!("download {} danmu, title={}", danmu.len(), title);
-            let r = danmu2ass::convert(
-                danmu.into_iter().map(|i| Ok(i.into())),
-                title.clone(),
-                &mut output,
-                req.config,
-                &req.denylist,
-            );
+            log::info!("danmu downloaded, title={}", title);
+            let r =
+                danmu2ass::convert(danmu, title.clone(), &mut output, req.config, &req.denylist);
             if let Err(e) = r {
                 return HttpResponse::BadRequest().json(json!({
                     "errmsg": format!("{e:#?}")
@@ -84,9 +79,21 @@ async fn convert(request: web::Json<ConvertRequest>) -> HttpResponse {
         .body(output)
 }
 
-async fn run_input_type(input_type: InputType) -> anyhow::Result<(String, Vec<DanmakuElem>)> {
+type Iter = Box<dyn Iterator<Item = anyhow::Result<danmu2ass::Danmu>>>;
+
+async fn run_input_type(input_type: InputType) -> anyhow::Result<(String, Iter)> {
     let client = biliapi::connection::new_client()?;
     match input_type {
+        InputType::File(path) => {
+            let file = std::fs::File::open(&path)?;
+            let parser = danmu2ass::Parser::new(std::io::BufReader::with_capacity(1 << 20, file));
+            let filename = path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("danmu")
+                .to_string();
+            Ok((filename, Box::new(parser)))
+        }
         InputType::BV { bv, p } => {
             let p = p.unwrap_or(1);
             // get info for video
@@ -98,7 +105,8 @@ async fn run_input_type(input_type: InputType) -> anyhow::Result<(String, Vec<Da
 
             let danmu =
                 danmu2ass::bilibili::get_danmu_for_video(page.cid, page.duration.as_secs()).await?;
-            Ok((info.title, danmu))
+            let danmu = danmu.into_iter().map(|i| Ok(i.into()));
+            Ok((info.title, Box::new(danmu)))
         }
         InputType::Season { season_id } => {
             let mut season_info =
@@ -110,7 +118,8 @@ async fn run_input_type(input_type: InputType) -> anyhow::Result<(String, Vec<Da
             let danmu =
                 danmu2ass::bilibili::get_danmu_for_video(episode.cid, episode.duration_ms / 1000)
                     .await?;
-            Ok((title, danmu))
+            let danmu = danmu.into_iter().map(|i| Ok(i.into()));
+            Ok((title, Box::new(danmu)))
         }
         InputType::Episode { episode_id } => {
             let season_info = danmu2ass::bilibili::Season::request(&client, ("ep_id", episode_id))
@@ -124,7 +133,8 @@ async fn run_input_type(input_type: InputType) -> anyhow::Result<(String, Vec<Da
             let title = format!("{} - {}", season_info.title, ep.title);
             let danmu =
                 danmu2ass::bilibili::get_danmu_for_video(ep.cid, ep.duration_ms / 1000).await?;
-            Ok((title, danmu))
+            let danmu = danmu.into_iter().map(|i| Ok(i.into()));
+            Ok((title, Box::new(danmu)))
         }
         _ => {
             bail!("Unsupported input type");

@@ -24,31 +24,29 @@ impl std::str::FromStr for InputType {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match url::Url::parse(s) {
-            Ok(url) => {
+        if s.starts_with("http") {
+            if let Ok(url) = url::Url::parse(s) {
                 info!("输入类型为 URL，解析中...");
-                Self::from_url(url)
+                return Self::from_url(url);
             }
-            Err(_) => {
-                if s.chars().all(|c| c.is_ascii_alphanumeric()) {
-                    if s.starts_with("BV") {
-                        return Ok(InputType::BV {
-                            bv: s.to_string(),
-                            p: None,
-                        });
-                    }
-                    if let Ok(t) = Self::from_episode_or_season_str(s) {
-                        return Ok(t);
-                    }
-                }
+        }
+        if s.chars().all(|c| c.is_ascii_alphanumeric()) {
+            if s.starts_with("BV") {
+                return Ok(InputType::BV {
+                    bv: s.to_string(),
+                    p: None,
+                });
+            }
+            if let Ok(t) = Self::from_episode_or_season_str(s) {
+                return Ok(t);
+            }
+        }
 
-                let path = PathBuf::from(s);
-                if path.is_dir() {
-                    Ok(InputType::Folder(path))
-                } else {
-                    Ok(InputType::File(path))
-                }
-            }
+        let path = PathBuf::from(s);
+        if path.is_dir() {
+            Ok(InputType::Folder(path))
+        } else {
+            Ok(InputType::File(path))
         }
     }
 }
