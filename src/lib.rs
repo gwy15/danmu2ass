@@ -14,7 +14,7 @@ mod xml_parser;
 
 pub use ass_writer::AssWriter;
 pub use canvas::{Canvas, Config as CanvasConfig};
-pub use cli::{Args, convert};
+pub use cli::{convert, Args};
 pub use danmu::Danmu;
 pub use drawable::{DrawEffect, Drawable};
 pub use input_type::InputType;
