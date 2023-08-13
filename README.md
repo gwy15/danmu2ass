@@ -6,11 +6,11 @@
 
 ## 支持的格式
 - [x] 哔哩哔哩直播：录播姬等录制的 XML 格式文件
-- [x] 哔哩哔哩视频：支持 BV 号/链接（可带分 p 参数）
+- [x] 哔哩哔哩视频：支持 BV 号/B站链接（可带分 p 参数）
 - [x] 哔哩哔哩番组：支持 ss28281 / ep450006 或 https://www.bilibili.com/bangumi/play/ss28281 等链接
 
 ![image](https://github.com/gwy15/danmu2ass/assets/23229760/fb9c9a8b-cad7-4af2-8dc3-07602baa2810)
-[readme.webm](https://github.com/gwy15/danmu2ass/assets/23229760/282ccf33-bd49-4b86-b0bb-8edabc2f9f04)
+[使用视频](https://github.com/gwy15/danmu2ass/assets/23229760/282ccf33-bd49-4b86-b0bb-8edabc2f9f04)
 
 
 ## 特性
@@ -18,7 +18,7 @@
 - 可交互、实时预览的 web UI
 - 更紧密的弹幕填充算法（见下）
 - 底部和顶部弹幕和逆向弹幕转成正常弹幕，减少遮挡
-- 弹幕透明度、字体、字号、高度、间距全部可调
+- 弹幕透明度、字体、字号、高度、间距、描边等全部可调
 - 支持过滤黑名单关键词（cli 模式）
 - 支持文件夹模式，递归查找所有 xml 文件并多线程处理（cli 模式）
 - 自动判断是否已经转换过，跳过已转换的文件，方便自动化处理（cli 模式）
