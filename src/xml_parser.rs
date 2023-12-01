@@ -128,13 +128,23 @@ impl<R: BufRead> Iterator for Parser<R> {
     fn next(&mut self) -> Option<Result<Danmu>> {
         use quick_xml::events::Event;
 
-        let mut danmu = Danmu::default();
+        /// 一个简单的状态机
+        enum Status {
+            // on <d> -> AttrWaitForContent
+            Start,
+            // on text -> WaitForEnd
+            AttrWaitForContent(Danmu),
+            // on </d> -> return
+            WaitForEnd(Danmu),
+        }
+
+        let mut status = Status::Start;
         loop {
-            let event = match self
+            let event = self
                 .reader
                 .read_event_into(&mut self.buf)
-                .context("XML 文件解析错误")
-            {
+                .context("XML 文件解析错误");
+            let event = match event {
                 Ok(e) => e,
                 Err(e) => return Some(Err(e)),
             };
@@ -148,13 +158,10 @@ impl<R: BufRead> Iterator for Parser<R> {
                         .attributes()
                         .filter_map(|r| r.ok())
                         .find(|attr| attr.key.as_ref() == b"p");
-                    let p_attr = match p_attr {
-                        Some(p_attr) => p_attr,
-                        None => {
-                            return Some(Err(anyhow::anyhow!(
-                                "弹幕 <d> 中没找到 p 属性，xml 文件可能有错误"
-                            )))
-                        }
+                    let Some(p_attr) = p_attr else {
+                        return Some(Err(anyhow::anyhow!(
+                            "弹幕 <d> 中没找到 p 属性，xml 文件可能有错误"
+                        )));
                     };
                     let p_attr_s = match std::str::from_utf8(p_attr.value.as_ref())
                         .context("非法 UTF-8 字符")
@@ -164,30 +171,38 @@ impl<R: BufRead> Iterator for Parser<R> {
                     };
 
                     match Danmu::from_xml_p_attr(p_attr_s).context("p 属性解析错误") {
-                        Ok(parsed) => {
-                            danmu = parsed;
+                        Ok(Some(parsed)) => {
+                            status = Status::AttrWaitForContent(parsed);
+                        }
+                        Ok(None) => {
+                            status = Status::Start;
                         }
                         Err(e) => return Some(Err(e)),
                     };
                 }
-                Event::End(end) if end.local_name().as_ref() == b"d" => {
-                    self.count += 1;
-                    return Some(Ok(danmu));
-                }
-                Event::Text(text) => match std::str::from_utf8(&text).context("非法 UTF-8 字符")
-                {
-                    Ok(s) => {
-                        #[cfg(debug_assertions)]
-                        {
-                            danmu.content = format!("{}-{}", self.count, s);
-                        }
-                        #[cfg(not(debug_assertions))]
-                        {
-                            danmu.content = s.to_string();
-                        }
+                Event::End(end) if end.local_name().as_ref() == b"d" => match status {
+                    Status::WaitForEnd(danmu) => {
+                        self.count += 1;
+                        return Some(Ok(danmu));
                     }
-                    Err(e) => return Some(Err(e)),
+                    _ => continue,
                 },
+                Event::Text(text) => {
+                    let s = match std::str::from_utf8(&text).context("非法 UTF-8 字符") {
+                        #[cfg(debug_assertions)]
+                        Ok(s) => format!("{}-{}", self.count, s),
+                        #[cfg(not(debug_assertions))]
+                        Ok(s) => s.to_string(),
+                        Err(e) => return Some(Err(e)),
+                    };
+                    match status {
+                        Status::AttrWaitForContent(mut danmu) => {
+                            danmu.content = s;
+                            status = Status::WaitForEnd(danmu);
+                        }
+                        _ => continue,
+                    }
+                }
                 _ => {
                     continue;
                 }
@@ -210,7 +225,7 @@ impl Danmu {
     /// 6. 0
     /// 7. 用户 UID（如 398452452）
     /// 8. 0
-    pub fn from_xml_p_attr(p_attr: &str) -> Result<Self> {
+    pub fn from_xml_p_attr(p_attr: &str) -> Result<Option<Self>> {
         let mut iter = p_attr.split(',');
         let timeline_s = iter
             .next()
@@ -222,7 +237,9 @@ impl Danmu {
             .context("p 属性中没有弹幕类型")?
             .parse()
             .context("弹幕类型解析错误")?;
-        let r#type = DanmuType::from_xml_num(r#type)?;
+        let Ok(r#type) = DanmuType::from_xml_num(r#type) else {
+            return Ok(None);
+        };
         let fontsize: u32 = iter
             .next()
             .context("p 属性中没有字体大小")?
@@ -242,13 +259,13 @@ impl Danmu {
         let g = (rgb >> 8) & 0xff;
         let b = rgb & 0xff;
 
-        Ok(Self {
+        Ok(Some(Self {
             timeline_s,
             content: String::new(),
             r#type,
             fontsize,
             rgb: (r as u8, g as u8, b as u8),
-        })
+        }))
     }
 }
 impl DanmuType {
@@ -335,8 +352,9 @@ mod tests {
 
     #[test]
     fn from_xml() {
-        let danmu =
-            Danmu::from_xml_p_attr("0.583,1,25,14893055,1647777083474,0,215087720,0").unwrap();
+        let danmu = Danmu::from_xml_p_attr("0.583,1,25,14893055,1647777083474,0,215087720,0")
+            .unwrap()
+            .unwrap();
         assert_eq!(
             danmu,
             Danmu {
