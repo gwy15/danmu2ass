@@ -132,7 +132,7 @@ impl<R: BufRead> Iterator for Parser<R> {
         loop {
             let event = match self
                 .reader
-                .read_event(&mut self.buf)
+                .read_event_into(&mut self.buf)
                 .context("XML 文件解析错误")
             {
                 Ok(e) => e,
@@ -143,11 +143,11 @@ impl<R: BufRead> Iterator for Parser<R> {
                 Event::Eof => {
                     return None;
                 }
-                Event::Start(start) if start.local_name() == b"d" => {
+                Event::Start(start) if start.local_name().as_ref() == b"d" => {
                     let p_attr = start
                         .attributes()
                         .filter_map(|r| r.ok())
-                        .find(|attr| attr.key == b"p");
+                        .find(|attr| attr.key.as_ref() == b"p");
                     let p_attr = match p_attr {
                         Some(p_attr) => p_attr,
                         None => {
@@ -170,7 +170,7 @@ impl<R: BufRead> Iterator for Parser<R> {
                         Err(e) => return Some(Err(e)),
                     };
                 }
-                Event::End(end) if end.local_name() == b"d" => {
+                Event::End(end) if end.local_name().as_ref() == b"d" => {
                     self.count += 1;
                     return Some(Ok(danmu));
                 }
