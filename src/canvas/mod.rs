@@ -78,7 +78,7 @@ impl Canvas {
             crate::danmu::DanmuType::Bottom
             | crate::danmu::DanmuType::Top
             | crate::danmu::DanmuType::Reverse => {
-                // 不喜欢底部弹幕，直接转成 Bottom
+                // 不喜欢底部弹幕，直接转成 Float
                 // 这是 feature 不是 bug
                 danmu.r#type = crate::danmu::DanmuType::Float;
                 Ok(self.draw_float(danmu))
