@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::HashSet,
     fs::File,
     io::{StdoutLock, Write},
@@ -396,8 +397,13 @@ where
     let mut canvas = canvas_config.canvas();
     let t = std::time::Instant::now();
 
-    for danmu in data_provider {
-        let danmu = danmu?;
+    let mut danmus = data_provider.collect::<Result<Vec<_>>>()?;
+    danmus.sort_by(|a, b| {
+        a.timeline_s
+            .partial_cmp(&b.timeline_s)
+            .unwrap_or(Ordering::Equal)
+    });
+    for danmu in danmus {
         if let Some(denylist) = denylist.as_ref() {
             if denylist.iter().any(|s| danmu.content.contains(s)) {
                 continue;
