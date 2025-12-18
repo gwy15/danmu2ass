@@ -1,4 +1,4 @@
-FROM rust:slim-buster as builder
+FROM rust:slim-bullseye as builder
 WORKDIR /code
 
 COPY . .
@@ -6,7 +6,7 @@ RUN cargo b --release --no-default-features --features quick_xml,rustls \
     && strip target/release/danmu2ass
 
 # 
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 WORKDIR /code
 COPY --from=builder /code/target/release/danmu2ass .
 ENTRYPOINT [ "./danmu2ass" ]
