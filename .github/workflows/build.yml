@@ -11,7 +11,7 @@ jobs:
         run: |
           cargo build --verbose --release --no-default-features --features quick_xml,rustls
       - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: danmu2ass-linux
           path: target/release/danmu2ass
@@ -40,7 +40,7 @@ jobs:
           cp target/x86_64-pc-windows-gnu/release/danmu2ass.exe ./danmu2ass
           cp -r webui/dist ./danmu2ass/static
       - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: danmu2ass-windows
           path: ./danmu2ass
