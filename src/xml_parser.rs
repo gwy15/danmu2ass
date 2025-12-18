@@ -251,13 +251,16 @@ impl Danmu {
             .context("p 属性中没有颜色")?
             .parse()
             .context("颜色解析错误")?;
-        // rgb 是个数字，类似 0x010203
-        if (rgb >> 24) != 0 {
-            bail!("颜色解析错误：高 8 位不为 0，颜色为 {:x}", rgb);
-        }
-        let r = (rgb >> 16) & 0xff;
-        let g = (rgb >> 8) & 0xff;
-        let b = rgb & 0xff;
+        // rgb 是个数字，一般情况下为 0xRRGGBB，但是偶尔也有 RRRGGGBBB(dec)
+        let (r, g, b) = if (rgb >> 24) == 0 {
+            ((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff)
+        } else if rgb <= 255255255 {
+            // 见 https://github.com/gwy15/danmu2ass/issues/17，可能有 RRRGGGBBB 的情况
+            const K: u32 = 1000;
+            (((rgb / K / K) % K) & 0xff, ((rgb / K) % K) & 0xff, (rgb % K) & 0xff)
+        } else {
+            bail!("颜色解析错误：颜色为 {:x}", rgb);
+        };
 
         Ok(Some(Self {
             timeline_s,
@@ -372,5 +375,12 @@ mod tests {
         let mut parser = Parser::new(BREAK_LINE.as_bytes());
         let danmu = parser.next().unwrap().unwrap();
         assert_eq!(danmu.content, "0-呵\n呵\n比\n你\n们\n更\n喜\n欢\n晚\n晚");
+    }
+
+    #[test]
+    fn parse_rgb_255255255() {
+        let danmu = Danmu::from_xml_p_attr("1036.83700,1,25,255255255,1764772645,0,3ce09b1e,1993816477455038720,7");
+        let danmu = danmu.unwrap().unwrap();
+        assert_eq!(danmu.rgb, (255, 255, 255));
     }
 }
