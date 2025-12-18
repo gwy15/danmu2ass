@@ -41,10 +41,6 @@ async fn get_danmu_for_cid_segment(
     }
 }
 
-fn div_ceil(a: u64, b: u64) -> u64 {
-    (a + b - 1) / b
-}
-
 pub async fn get_danmu_for_video(cid: u64, duration_sec: u64) -> Result<Vec<DanmakuElem>> {
     let client = reqwest::ClientBuilder::new()
     .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36")
@@ -55,7 +51,7 @@ pub async fn get_danmu_for_video(cid: u64, duration_sec: u64) -> Result<Vec<Danm
     info!("获取视频 aid={} 的弹幕，视频有 {} 秒", cid, s);
 
     let mut fut = vec![];
-    for i in 0..div_ceil(s, 360) {
+    for i in 0..s.div_ceil(360) {
         fut.push(get_danmu_for_cid_segment(client.clone(), cid, i + 1));
     }
     let mut results =
