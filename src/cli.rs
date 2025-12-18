@@ -332,7 +332,7 @@ impl Args {
     }
 }
 
-fn writer_from_path(path: Option<&Path>) -> Result<Option<Either<File, StdoutLock>>> {
+fn writer_from_path(path: Option<&Path>) -> Result<Option<Either<File, StdoutLock<'_>>>> {
     let Some(output) = path else {
         return Ok(None);
     };
