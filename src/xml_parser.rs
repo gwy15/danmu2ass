@@ -257,7 +257,11 @@ impl Danmu {
         } else if rgb <= 255255255 {
             // 见 https://github.com/gwy15/danmu2ass/issues/17，可能有 RRRGGGBBB 的情况
             const K: u32 = 1000;
-            (((rgb / K / K) % K) & 0xff, ((rgb / K) % K) & 0xff, (rgb % K) & 0xff)
+            (
+                ((rgb / K / K) % K) & 0xff,
+                ((rgb / K) % K) & 0xff,
+                (rgb % K) & 0xff,
+            )
         } else {
             bail!("颜色解析错误：颜色为 {:x}", rgb);
         };
@@ -379,7 +383,9 @@ mod tests {
 
     #[test]
     fn parse_rgb_255255255() {
-        let danmu = Danmu::from_xml_p_attr("1036.83700,1,25,255255255,1764772645,0,3ce09b1e,1993816477455038720,7");
+        let danmu = Danmu::from_xml_p_attr(
+            "1036.83700,1,25,255255255,1764772645,0,3ce09b1e,1993816477455038720,7",
+        );
         let danmu = danmu.unwrap().unwrap();
         assert_eq!(danmu.rgb, (255, 255, 255));
     }
